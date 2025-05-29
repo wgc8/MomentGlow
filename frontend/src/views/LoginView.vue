@@ -18,12 +18,16 @@
             type="password"
             placeholder="密码"
             prefix-icon="Lock"
+            show-password
             @keyup.enter="handleLogin"
           />
         </el-form-item>
         <el-form-item>
           <el-button type="primary" class="login-button" @click="handleLogin">
             登录
+          </el-button>
+          <el-button class="register-link" link @click="goToRegister">
+            没有账号？立即注册
           </el-button>
         </el-form-item>
       </el-form>
@@ -73,6 +77,10 @@ const handleLogin = async () => {
     }
   })
 }
+
+const goToRegister = () => {
+  router.push('/register')
+}
 </script>
 
 <style lang="scss" scoped>
@@ -95,6 +103,12 @@ const handleLogin = async () => {
     
     .login-button {
       width: 100%;
+      margin-bottom: 10px;
+    }
+
+    .register-link {
+      width: 100%;
+      text-align: center;
     }
   }
 }
