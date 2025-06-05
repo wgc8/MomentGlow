@@ -1,20 +1,23 @@
 from django.shortcuts import render
-from rest_framework import viewsets, permissions, status
+from rest_framework import viewsets, permissions, status, filters
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from django_filters import rest_framework as filters
+from django_filters.rest_framework import DjangoFilterBackend
 from .models import Diary, DiaryImage, Tag, Comment
 from .serializers import (
     DiarySerializer, DiaryImageSerializer, 
     TagSerializer, CommentSerializer
 )
+from django.db import models
 
 # Create your views here.
 
 class TagViewSet(viewsets.ModelViewSet):
     queryset = Tag.objects.all()
     serializer_class = TagSerializer
-    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+    permission_classes = [permissions.IsAuthenticated]
+    filter_backends = [filters.SearchFilter]
+    search_fields = ['name']
     
     @action(detail=True)
     def diaries(self, request, pk=None):
@@ -42,27 +45,29 @@ class DiaryFilter(filters.FilterSet):
 class DiaryViewSet(viewsets.ModelViewSet):
     serializer_class = DiarySerializer
     permission_classes = [permissions.IsAuthenticated]
-    filterset_class = DiaryFilter
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
+    filterset_fields = ['is_public', 'mood', 'weather']
+    search_fields = ['title', 'content']
+    ordering_fields = ['created_at', 'updated_at']
     
     def get_queryset(self):
-        """根据用户权限返回日记列表"""
         user = self.request.user
-        # 如果是获取公开日记列表
-        if self.action == 'public':
-            return Diary.objects.filter(is_public=True)
-        # 否则只返回用户自己的日记
-        return Diary.objects.filter(author=user)
+        # 返回用户自己的日记和其他用户公开的日记
+        return Diary.objects.filter(
+            models.Q(user=user) | models.Q(is_public=True)
+        ).select_related('user').prefetch_related('tags', 'comments')
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
     
-    @action(detail=False, methods=['get'])
-    def public(self, request):
-        """获取公开日记列表"""
-        queryset = self.get_queryset()
-        page = self.paginate_queryset(queryset)
-        if page is not None:
-            serializer = self.get_serializer(page, many=True)
-            return self.get_paginated_response(serializer.data)
-        serializer = self.get_serializer(queryset, many=True)
+    @action(detail=True, methods=['post'])
+    def add_comment(self, request, pk=None):
+        diary = self.get_object()
+        serializer = CommentSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save(diary=diary, user=request.user)
         return Response(serializer.data)
+        return Response(serializer.errors, status=400)
 
 class DiaryImageViewSet(viewsets.ModelViewSet):
     serializer_class = DiaryImageSerializer

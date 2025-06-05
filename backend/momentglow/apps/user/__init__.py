@@ -1,0 +1,1 @@
+default_app_config = 'momentglow.apps.user.apps.UserConfig' 

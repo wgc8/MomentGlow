@@ -38,7 +38,7 @@
           />
         </el-form-item>
         <el-form-item>
-          <el-button type="primary" class="register-button" @click="handleRegister">
+          <el-button type="primary" class="register-button" @click="handleRegister" :loading="loading">
             注册
           </el-button>
           <el-button class="login-link" link @click="goToLogin">
@@ -55,9 +55,11 @@ import { ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { User, Lock, Message } from '@element-plus/icons-vue'
+import { register } from '@/api/auth'
 
 const router = useRouter()
 const registerFormRef = ref()
+const loading = ref(false)
 
 const registerForm = reactive({
   username: '',
@@ -97,13 +99,32 @@ const rules = {
 const handleRegister = async () => {
   if (!registerFormRef.value) return
   
-  await registerFormRef.value.validate((valid: boolean) => {
-    if (valid) {
-      // TODO: 实现注册逻辑
-      ElMessage.success('注册成功！')
-      router.push('/login')
+  try {
+    await registerFormRef.value.validate()
+    loading.value = true
+    
+    await register({
+      username: registerForm.username,
+      password: registerForm.password,
+      password2: registerForm.confirmPassword,
+      email: registerForm.email
+    })
+    
+    ElMessage.success('注册成功！')
+    router.push('/login')
+  } catch (error: any) {
+    if (error.password) {
+      ElMessage.error(error.password[0])
+    } else if (error.username) {
+      ElMessage.error(error.username[0])
+    } else if (error.email) {
+      ElMessage.error(error.email[0])
+    } else {
+      ElMessage.error('注册失败，请重试')
     }
-  })
+  } finally {
+    loading.value = false
+  }
 }
 
 const goToLogin = () => {
