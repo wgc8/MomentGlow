@@ -3,6 +3,7 @@ from rest_framework import viewsets, permissions, status, filters
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from django_filters.rest_framework import DjangoFilterBackend
+from django_filters import rest_framework as django_filters
 from .models import Diary, DiaryImage, Tag, Comment
 from .serializers import (
     DiarySerializer, DiaryImageSerializer, 
@@ -27,12 +28,12 @@ class TagViewSet(viewsets.ModelViewSet):
         serializer = DiarySerializer(diaries, many=True)
         return Response(serializer.data)
 
-class DiaryFilter(filters.FilterSet):
-    created_at = filters.DateFromToRangeFilter()
-    mood = filters.CharFilter(lookup_expr='icontains')
-    weather = filters.CharFilter(lookup_expr='icontains')
-    location = filters.CharFilter(lookup_expr='icontains')
-    tags = filters.ModelMultipleChoiceFilter(
+class DiaryFilter(django_filters.FilterSet):
+    created_at = django_filters.DateFromToRangeFilter()
+    mood = django_filters.CharFilter(lookup_expr='icontains')
+    weather = django_filters.CharFilter(lookup_expr='icontains')
+    location = django_filters.CharFilter(lookup_expr='icontains')
+    tags = django_filters.ModelMultipleChoiceFilter(
         queryset=Tag.objects.all(),
         field_name='tags__name',
         to_field_name='name'

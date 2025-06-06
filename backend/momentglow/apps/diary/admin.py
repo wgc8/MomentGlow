@@ -9,9 +9,9 @@ class TagAdmin(admin.ModelAdmin):
 
 @admin.register(Diary)
 class DiaryAdmin(admin.ModelAdmin):
-    list_display = ['title', 'author', 'created_at', 'updated_at', 'mood', 'weather', 'is_public']
+    list_display = ['title', 'user', 'created_at', 'updated_at', 'mood', 'weather', 'is_public']
     list_filter = ['is_public', 'created_at', 'mood', 'weather']
-    search_fields = ['title', 'content', 'author__username']
+    search_fields = ['title', 'content', 'user__username']
     date_hierarchy = 'created_at'
     filter_horizontal = ['tags']
 
@@ -24,7 +24,7 @@ class DiaryImageAdmin(admin.ModelAdmin):
 
 @admin.register(Comment)
 class CommentAdmin(admin.ModelAdmin):
-    list_display = ['diary', 'author', 'content', 'created_at', 'parent']
+    list_display = ['diary', 'user', 'content', 'created_at']
     list_filter = ['created_at']
-    search_fields = ['content', 'author__username', 'diary__title']
+    search_fields = ['content', 'user__username', 'diary__title']
     date_hierarchy = 'created_at'

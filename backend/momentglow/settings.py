@@ -47,7 +47,7 @@ INSTALLED_APPS = [
     'corsheaders',
     'django_filters',
     # Local apps
-    'diary',
+    'momentglow.apps.diary',
 ]
 
 MIDDLEWARE = [
@@ -87,12 +87,12 @@ WSGI_APPLICATION = 'momentglow.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'testdb',
-        'USER': 'postgres',
-        'PASSWORD': '123456',
-        'HOST': '121.40.208.236',
-        'PORT': '5432',
+        'ENGINE': os.getenv('DB_ENGINE', 'django.db.backends.sqlite3'),
+        'NAME': os.getenv('DB_NAME', BASE_DIR / 'db.sqlite3'),
+        'USER': os.getenv('DB_USER', ''),
+        'PASSWORD': os.getenv('DB_PASSWORD', ''),
+        'HOST': os.getenv('DB_HOST', ''),
+        'PORT': os.getenv('DB_PORT', ''),
     }
 }
 
