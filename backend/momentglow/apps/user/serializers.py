@@ -1,6 +1,8 @@
 from rest_framework import serializers
 from django.contrib.auth.models import User
 from django.contrib.auth.password_validation import validate_password
+from django.contrib.auth import authenticate
+from rest_framework_simplejwt.tokens import RefreshToken
 
 class RegisterSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, required=True, validators=[validate_password])
@@ -28,4 +30,30 @@ class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ('id', 'username', 'email')
-        read_only_fields = ('id',) 
+        read_only_fields = ('id',)
+
+class LoginSerializer(serializers.Serializer):
+    username = serializers.CharField(required=True)
+    password = serializers.CharField(required=True, write_only=True)
+
+    def validate(self, attrs):
+        username = attrs.get('username')
+        password = attrs.get('password')
+
+        if username and password:
+            user = authenticate(username=username, password=password)
+            if user:
+                if not user.is_active:
+                    raise serializers.ValidationError('用户账号已被禁用')
+                
+                # 生成JWT令牌
+                refresh = RefreshToken.for_user(user)
+                
+                attrs['user'] = user
+                attrs['token'] = str(refresh.access_token)
+                attrs['refresh'] = str(refresh)
+                return attrs
+            else:
+                raise serializers.ValidationError('用户名或密码错误')
+        else:
+            raise serializers.ValidationError('请提供用户名和密码') 

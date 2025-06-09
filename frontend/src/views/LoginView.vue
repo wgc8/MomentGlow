@@ -23,7 +23,7 @@
           />
         </el-form-item>
         <el-form-item>
-          <el-button type="primary" class="login-button" @click="handleLogin">
+          <el-button type="primary" class="login-button" @click="handleLogin" :loading="loading">
             登录
           </el-button>
           <el-button class="register-link" link @click="goToRegister">
@@ -40,9 +40,12 @@ import { ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { User, Lock } from '@element-plus/icons-vue'
+import { useUserStore } from '@/store/user'
 
 const router = useRouter()
+const userStore = useUserStore()
 const loginFormRef = ref()
+const loading = ref(false)
 
 const loginForm = reactive({
   username: '',
@@ -61,21 +64,30 @@ const rules = {
 const handleLogin = async () => {
   if (!loginFormRef.value) return
   
-  await loginFormRef.value.validate((valid: boolean) => {
-    if (valid) {
-      // 验证用户名和密码
-      if (loginForm.username === 'wgc' && loginForm.password === '123') {
-        // 保存登录状态
-        localStorage.setItem('isLoggedIn', 'true')
-        localStorage.setItem('username', loginForm.username)
-        
-        ElMessage.success('登录成功')
-        router.push('/')
-      } else {
-        ElMessage.error('用户名或密码错误')
-      }
+  try {
+    await loginFormRef.value.validate()
+    loading.value = true
+    
+    await userStore.login({
+      username: loginForm.username,
+      password: loginForm.password
+    })
+    
+    ElMessage.success('登录成功')
+    router.push('/')
+  } catch (error: any) {
+    if (error.non_field_errors) {
+      ElMessage.error(error.non_field_errors[0])
+    } else if (error.username) {
+      ElMessage.error(error.username[0])
+    } else if (error.password) {
+      ElMessage.error(error.password[0])
+    } else {
+      ElMessage.error('登录失败，请重试')
     }
-  })
+  } finally {
+    loading.value = false
+  }
 }
 
 const goToRegister = () => {

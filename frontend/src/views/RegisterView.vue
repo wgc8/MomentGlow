@@ -92,7 +92,7 @@ const rules = {
   ],
   email: [
     { required: true, message: '请输入电子邮箱', trigger: 'blur' },
-    { type: 'email', message: '请输入正确的电子邮箱地址', trigger: 'blur' }
+    { pattern: /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/, message: '请输入正确的电子邮箱地址', trigger: 'blur' }
   ]
 }
 

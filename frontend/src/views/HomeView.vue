@@ -92,8 +92,10 @@ import { Plus, Search, Menu } from '@element-plus/icons-vue'
 import { useRouter } from 'vue-router'
 import DiaryList from '../components/DiaryList.vue'
 import DiaryEditor from '../components/DiaryEditor.vue'
+import { useUserStore } from '@/store/user'
 
 const router = useRouter()
+const userStore = useUserStore()
 
 // 响应式状态
 const showSidebar = ref(false)
@@ -104,7 +106,7 @@ const currentDiary = ref({
   content: ''
 })
 const isEdit = ref(false)
-const username = ref(localStorage.getItem('username') || '')
+const username = ref(userStore.username)
 
 // 模拟日记列表数据
 const diaryList = ref([
@@ -180,9 +182,7 @@ const deleteDiary = () => {
 }
 
 const handleLogout = () => {
-  localStorage.removeItem('isLoggedIn')
-  localStorage.removeItem('username')
-  username.value = ''
+  userStore.logout()
   router.push('/login')
 }
 </script>
