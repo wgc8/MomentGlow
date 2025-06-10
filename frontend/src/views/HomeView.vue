@@ -22,7 +22,10 @@
         <div class="diary-list">
           <div class="user-info">
             <span>欢迎，{{ username }}</span>
-            <el-button type="text" @click="handleLogout">退出登录</el-button>
+            <div class="user-actions">
+              <router-link to="/profile" class="profile-link">个人主页</router-link>
+              <el-button type="text" @click="handleLogout">退出登录</el-button>
+            </div>
           </div>
           <el-input
             v-model="searchKeyword"
@@ -61,7 +64,10 @@
             <el-icon><Menu /></el-icon>
           </el-button>
           <span class="mobile-title">{{ currentDiary.title || '新日记' }}</span>
-          <el-button type="text" @click="handleLogout">退出</el-button>
+          <div class="mobile-actions">
+            <router-link to="/profile" class="profile-link">个人主页</router-link>
+            <el-button type="text" @click="handleLogout">退出</el-button>
+          </div>
         </div>
 
         <div v-if="selectedDiaryId" class="editor-wrapper">
@@ -200,11 +206,27 @@ const handleLogout = () => {
       
       .user-info {
         display: flex;
-        justify-content: space-between;
-        align-items: center;
+        flex-direction: column;
         margin-bottom: 15px;
         padding-bottom: 10px;
         border-bottom: 1px solid #dcdfe6;
+        
+        .user-actions {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-top: 5px;
+        }
+      }
+      
+      .profile-link {
+        color: #409EFF;
+        text-decoration: none;
+        font-size: 14px;
+        
+        &:hover {
+          text-decoration: underline;
+        }
       }
       
       .new-diary-btn {
@@ -286,6 +308,12 @@ const handleLogout = () => {
         margin-left: 10px;
         font-size: 16px;
         font-weight: 500;
+      }
+      
+      .mobile-actions {
+        display: flex;
+        align-items: center;
+        gap: 10px;
       }
     }
 

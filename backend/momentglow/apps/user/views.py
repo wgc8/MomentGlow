@@ -4,6 +4,7 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.views import APIView
 from django.contrib.auth.models import User
 from .serializers import RegisterSerializer, UserSerializer, LoginSerializer
+from django.utils import timezone
 
 class RegisterView(generics.CreateAPIView):
     queryset = User.objects.all()
@@ -29,6 +30,10 @@ class LoginView(APIView):
             user = serializer.validated_data['user']
             token = serializer.validated_data['token']
             refresh = serializer.validated_data['refresh']
+            
+            # 手动更新用户的last_login字段
+            user.last_login = timezone.now()
+            user.save(update_fields=['last_login'])
             
             return Response({
                 'token': token,
