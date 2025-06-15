@@ -3,6 +3,7 @@ import HomeView from '../views/HomeView.vue'
 import LoginView from '../views/LoginView.vue'
 import RegisterView from '../views/RegisterView.vue'
 import ProfileView from '../views/ProfileView.vue'
+import FeedView from '../views/FeedView.vue'
 import { useUserStore } from '@/store/user'
 
 const router = createRouter({
@@ -22,6 +23,14 @@ const router = createRouter({
       path: '/',
       name: 'home',
       component: HomeView,
+      meta: {
+        requiresAuth: true
+      }
+    },
+    {
+      path: '/feed',
+      name: 'feed',
+      component: FeedView,
       meta: {
         requiresAuth: true
       }

@@ -1,5 +1,6 @@
 <template>
   <div class="diary-container">
+    <nav-bar />
     <el-container>
       <!-- 在移动端隐藏侧边栏，通过抽屉显示 -->
       <el-drawer
@@ -20,13 +21,6 @@
       <!-- 桌面端显示侧边栏 -->
       <el-aside width="250px" class="desktop-sidebar">
         <div class="diary-list">
-          <div class="user-info">
-            <span>欢迎，{{ username }}</span>
-            <div class="user-actions">
-              <router-link to="/profile" class="profile-link">个人主页</router-link>
-              <el-button type="text" @click="handleLogout">退出登录</el-button>
-            </div>
-          </div>
           <el-input
             v-model="searchKeyword"
             placeholder="搜索日记..."
@@ -64,10 +58,6 @@
             <el-icon><Menu /></el-icon>
           </el-button>
           <span class="mobile-title">{{ currentDiary.title || '新日记' }}</span>
-          <div class="mobile-actions">
-            <router-link to="/profile" class="profile-link">个人主页</router-link>
-            <el-button type="text" @click="handleLogout">退出</el-button>
-          </div>
         </div>
 
         <div v-if="selectedDiaryId" class="editor-wrapper">
@@ -98,6 +88,7 @@ import { Plus, Search, Menu } from '@element-plus/icons-vue'
 import { useRouter } from 'vue-router'
 import DiaryList from '../components/DiaryList.vue'
 import DiaryEditor from '../components/DiaryEditor.vue'
+import NavBar from '../components/NavBar.vue'
 import { useUserStore } from '@/store/user'
 
 const router = useRouter()
@@ -112,7 +103,6 @@ const currentDiary = ref({
   content: ''
 })
 const isEdit = ref(false)
-const username = ref(userStore.username)
 
 // 模拟日记列表数据
 const diaryList = ref([
@@ -186,11 +176,6 @@ const deleteDiary = () => {
     ElMessage.success('删除成功')
   }
 }
-
-const handleLogout = () => {
-  userStore.logout()
-  router.push('/login')
-}
 </script>
 
 <style lang="scss" scoped>
@@ -203,31 +188,6 @@ const handleLogout = () => {
     
     .diary-list {
       padding: 20px;
-      
-      .user-info {
-        display: flex;
-        flex-direction: column;
-        margin-bottom: 15px;
-        padding-bottom: 10px;
-        border-bottom: 1px solid #dcdfe6;
-        
-        .user-actions {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          margin-top: 5px;
-        }
-      }
-      
-      .profile-link {
-        color: #409EFF;
-        text-decoration: none;
-        font-size: 14px;
-        
-        &:hover {
-          text-decoration: underline;
-        }
-      }
       
       .new-diary-btn {
         width: 100%;
@@ -270,7 +230,7 @@ const handleLogout = () => {
       flex: 1;
       display: flex;
       flex-direction: column;
-      height: calc(100vh - 40px);
+      height: calc(100vh - 100px);
     }
     
     .empty-state {
@@ -281,13 +241,13 @@ const handleLogout = () => {
     }
   }
 }
+
 // 桌面端适配
 @media screen and (min-width: 769px) {
   .mobile-header {
     display: none !important;
   }
 }
-
 
 // 移动端适配
 @media screen and (max-width: 768px) {
@@ -309,19 +269,13 @@ const handleLogout = () => {
         font-size: 16px;
         font-weight: 500;
       }
-      
-      .mobile-actions {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-      }
     }
 
     .el-main {
       padding: 0;
 
       .editor-wrapper {
-        height: calc(100vh - 56px);
+        height: calc(100vh - 116px);
       }
     }
   }
