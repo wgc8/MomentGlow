@@ -103,13 +103,13 @@ const handleRegister = async () => {
     await registerFormRef.value.validate()
     loading.value = true
     
-    await register({
+    const response = await register({
       username: registerForm.username,
       password: registerForm.password,
       password2: registerForm.confirmPassword,
       email: registerForm.email
     })
-    
+
     ElMessage.success('注册成功！')
     router.push('/login')
   } catch (error: any) {
