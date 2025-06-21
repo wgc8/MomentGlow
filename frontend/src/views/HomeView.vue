@@ -181,10 +181,12 @@ const deleteDiary = () => {
 <style lang="scss" scoped>
 .diary-container {
   height: 100vh;
+  padding-top: 80px;
   
   .el-aside {
     border-right: 1px solid #dcdfe6;
     background-color: #f5f7fa;
+    height: calc(100vh - 60px);
     
     .diary-list {
       padding: 20px;
@@ -222,15 +224,16 @@ const deleteDiary = () => {
   }
   
   .el-main {
-    padding: 20px;
+    padding: 0;
     display: flex;
     flex-direction: column;
-    
+    height: calc(100vh - 116px);
+
     .editor-wrapper {
       flex: 1;
       display: flex;
       flex-direction: column;
-      height: calc(100vh - 100px);
+      height: 100%;
     }
     
     .empty-state {

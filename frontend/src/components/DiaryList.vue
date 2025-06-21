@@ -103,4 +103,15 @@ const handleSearch = () => {
     }
   }
 }
+
+// 移动端适配
+@media screen and (max-width: 768px) {
+  .diary-list {
+    height: 100%; // 使用100%高度，因为父容器已经处理了布局
+    
+    :deep(.el-scrollbar) {
+      height: calc(100vh - 200px) !important; // 调整滚动区域高度，考虑搜索框和按钮的高度
+    }
+  }
+}
 </style> 

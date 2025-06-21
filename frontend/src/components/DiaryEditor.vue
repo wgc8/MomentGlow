@@ -160,13 +160,13 @@ onBeforeUnmount(() => {
 .diary-editor {
   display: flex;
   flex-direction: column;
-  height: 95vh;
+  height: 100%;
 
   .editor-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 20px;
+    margin-bottom: 10px;
     
     .title-input {
       width: 300px;
@@ -220,6 +220,8 @@ onBeforeUnmount(() => {
 // 移动端适配
 @media screen and (max-width: 768px) {
   .diary-editor {
+    height: 100%; // 使用100%高度，因为父容器已经处理了布局
+    
     .editor-header {
       padding: 10px;
       flex-wrap: wrap;
