@@ -1,5 +1,4 @@
-import axios from 'axios'
-import { useUserStore } from '@/store/user'
+import http from '@/utils/http'
 
 // 用户信息类型
 export interface UserInfo {
@@ -21,14 +20,16 @@ export interface DiaryEntry {
   updatedAt: string
 }
 
+// 获取用户日记统计数据（用于日历显示）
+export interface DiaryStats {
+  date: string
+  count: number
+  mood?: string
+}
+
 // 获取用户信息
 export const getUserInfo = async (userId: number) => {
-  const userStore = useUserStore()
-  const response = await axios.get(`/api/users/${userId}`, {
-    headers: {
-      Authorization: `Bearer ${userStore.token}`
-    }
-  })
+  const response = await http.get(`/api/users/${userId}`)
   return response.data as UserInfo
 }
 
@@ -41,60 +42,28 @@ export interface UpdateUserData {
 }
 
 export const updateUserInfo = async (userId: number, data: UpdateUserData) => {
-  const userStore = useUserStore()
-  const response = await axios.put(`/api/users/${userId}`, data, {
-    headers: {
-      Authorization: `Bearer ${userStore.token}`
-    }
-  })
+  const response = await http.put(`/api/users/${userId}`, data)
   return response.data
 }
 
 // 获取用户日记列表
 export const getUserDiaries = async (userId: number) => {
-  const userStore = useUserStore()
-  const response = await axios.get(`/api/users/${userId}/diaries`, {
-    headers: {
-      Authorization: `Bearer ${userStore.token}`
-    }
-  })
+  const response = await http.get(`/api/users/${userId}/diaries`)
   return response.data as DiaryEntry[]
 }
 
-// 获取用户日记统计数据（用于日历显示）
-export interface DiaryStats {
-  date: string
-  count: number
-  mood?: string
-}
-
 export const getUserDiaryStats = async (userId: number) => {
-  const userStore = useUserStore()
-  const response = await axios.get(`/api/users/${userId}/diary-stats`, {
-    headers: {
-      Authorization: `Bearer ${userStore.token}`
-    }
-  })
+  const response = await http.get(`/api/users/${userId}/diary-stats`)
   return response.data as DiaryStats[]
 }
 
 // 更新日记内容
 export const updateDiary = async (diaryId: number, content: string, mood: string) => {
-  const userStore = useUserStore()
-  const response = await axios.put(`/api/diaries/${diaryId}`, { content, mood }, {
-    headers: {
-      Authorization: `Bearer ${userStore.token}`
-    }
-  })
+  const response = await http.put(`/api/diaries/${diaryId}`, { content, mood })
   return response.data
 }
 
 // 删除日记
 export const deleteDiary = async (diaryId: number) => {
-  const userStore = useUserStore()
-  await axios.delete(`/api/diaries/${diaryId}`, {
-    headers: {
-      Authorization: `Bearer ${userStore.token}`
-    }
-  })
+  await http.delete(`/api/diaries/${diaryId}`)
 } 

@@ -45,6 +45,8 @@ db.sqlite3
 db.sqlite3-journal
 media/
 static/
+backend/momentglow/apps/diary/migrations/*
+!backend/momentglow/apps/diary/migrations/__init__.py
 
 # Environment variables
 .env

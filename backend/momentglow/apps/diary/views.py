@@ -75,11 +75,11 @@ class DiaryImageViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
     
     def get_queryset(self):
-        return DiaryImage.objects.filter(diary__author=self.request.user)
+        return DiaryImage.objects.filter(diary__user=self.request.user)
     
     def perform_create(self, serializer):
         diary_id = self.request.data.get('diary')
-        diary = Diary.objects.get(id=diary_id, author=self.request.user)
+        diary = Diary.objects.get(id=diary_id, user=self.request.user)
         serializer.save(diary=diary)
 
 class CommentViewSet(viewsets.ModelViewSet):
@@ -92,6 +92,6 @@ class CommentViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         diary_id = self.request.data.get('diary')
         diary = Diary.objects.get(id=diary_id)
-        if not diary.is_public and diary.author != self.request.user:
+        if not diary.is_public and diary.user != self.request.user:
             raise permissions.PermissionDenied("不能评论非公开的日记")
         serializer.save(diary=diary)

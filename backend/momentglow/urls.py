@@ -21,7 +21,7 @@ from django.conf.urls.static import static
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('api/user/', include('momentglow.apps.user.urls')),
-    path('api/diary/', include('momentglow.apps.diary.urls')),
+    path('api/users/', include('momentglow.apps.user.urls')),
+    path('api/diaries/', include('momentglow.apps.diary.urls')),
     path('api-auth/', include('rest_framework.urls')),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

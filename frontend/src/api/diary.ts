@@ -1,18 +1,21 @@
 import request from '@/utils/http'
 
-export interface Diary {
-  id: number
+export interface DiaryInput {
+  id?: number
+  title?: string
   content: string
   mood: string
-  createdAt: string
-  user: {
-    id: number
+  weather: string
+  created_at?: string
+  is_public: boolean
+  user?: {
+    id: string
     username: string
-    avatar: string
+    // avatar: string
   }
-  likes: number
-  comments: number
-  isLiked: boolean
+  // likes: number
+  // comments: number
+  // isLiked: boolean
 }
 
 export interface GetPublicDiariesParams {
@@ -22,7 +25,7 @@ export interface GetPublicDiariesParams {
 }
 
 export interface GetPublicDiariesResponse {
-  data: Diary[]
+  data: DiaryInput[]
   hasMore: boolean
 }
 
@@ -50,3 +53,15 @@ export const getDiaryComments = (diaryId: number) => {
 export const addComment = (diaryId: number, content: string) => {
   return request.post(`/api/diaries/${diaryId}/comments`, { content })
 } 
+
+// 发布日记
+export const publishDiary = (diary: DiaryInput) => {
+  return request.post('/api/diaries/', diary)
+}
+
+// 删除日记
+export const deleteDiary = (diaryId: number) => {
+  return request.delete(`/api/diaries/${diaryId}`)
+}
+
+// 修改日记

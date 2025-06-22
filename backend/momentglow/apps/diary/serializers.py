@@ -26,7 +26,7 @@ class DiaryImageSerializer(serializers.ModelSerializer):
         fields = ['id', 'image', 'created_at']
 
 class DiarySerializer(serializers.ModelSerializer):
-    author = UserSerializer(read_only=True)
+    user = UserSerializer(read_only=True)
     images = DiaryImageSerializer(many=True, read_only=True)
     tags = TagSerializer(many=True, required=False)
     comments = CommentSerializer(many=True, read_only=True)
@@ -37,7 +37,7 @@ class DiarySerializer(serializers.ModelSerializer):
         fields = [
             'id', 'title', 'content', 'created_at', 'updated_at',
             'mood', 'weather', 'location', 'is_public',
-            'tags', 'comments', 'user_username'
+            'user', 'tags', 'comments', 'user_username','images'
         ]
         read_only_fields = ['user']
 

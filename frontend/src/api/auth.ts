@@ -28,7 +28,7 @@ export interface RefreshTokenResponse {
 
 export const register = async (data: RegisterData) => {
   try {
-    const response = await http.post('api/user/register/', data)
+    const response = await http.post('api/users/register/', data)
     return response.data
   } catch (error: any) {
     if (error.response) {
@@ -40,7 +40,7 @@ export const register = async (data: RegisterData) => {
 
 export const login = async (data: LoginData) => {
   try {
-    const response = await http.post<LoginResponse>('api/user/login/', data)
+    const response = await http.post<LoginResponse>('api/users/login/', data)
     return response
   } catch (error: any) {
     if (error.response) {
@@ -52,7 +52,7 @@ export const login = async (data: LoginData) => {
 
 export const refreshToken = async (refresh: string) => {
   try {
-    const response = await http.post<RefreshTokenResponse>('api/user/token/refresh/', { refresh })
+    const response = await http.post<RefreshTokenResponse>('api/users/token/refresh/', { refresh })
     return response
   } catch (error: any) {
     if (error.response) {

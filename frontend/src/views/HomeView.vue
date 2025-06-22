@@ -90,6 +90,8 @@ import DiaryList from '../components/DiaryList.vue'
 import DiaryEditor from '../components/DiaryEditor.vue'
 import NavBar from '../components/NavBar.vue'
 import { useUserStore } from '@/store/user'
+import { publishDiary as apiPublishDiary, deleteDiary as apiDeleteDiary } from '@/api/diary'
+import type { DiaryInput } from '@/api/diary'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -100,20 +102,26 @@ const searchKeyword = ref('')
 const selectedDiaryId = ref<number | null>(null)
 const currentDiary = ref({
   title: '',
-  content: ''
+  content: '',
+  weather: '',
+  mood: '',
+  isPublic: false
 })
 const isEdit = ref(false)
 
-// 模拟日记列表数据
-const diaryList = ref([
-  {
-    id: 1,
-    title: '今天的心情',
-    preview: '今天天气很好，我去公园散步...',
-    date: '2024-01-20',
-    content: ''
-  }
-])
+// 日记列表数据
+interface Diary {
+  id: number
+  title: string
+  preview: string
+  date: string
+  content: string
+  weather?: string
+  mood?: string
+  isPublic?: boolean
+}
+
+const diaryList = ref<Diary[]>([])
 
 // 方法
 const createNewDiary = () => {
@@ -122,11 +130,20 @@ const createNewDiary = () => {
     title: '新日记',
     preview: '',
     date: new Date().toISOString().split('T')[0],
-    content: ''
+    content: '',
+    weather: '',
+    mood: '',
+    isPublic: false
   }
   diaryList.value.unshift(newDiary)
   selectedDiaryId.value = newDiary.id
-  currentDiary.value = { title: newDiary.title, content: '' }
+  currentDiary.value = { 
+    title: newDiary.title, 
+    content: '',
+    weather: '',
+    mood: '',
+    isPublic: false
+  }
   showSidebar.value = false
   isEdit.value = true
 }
@@ -137,7 +154,10 @@ const selectDiary = (id: number) => {
   if (diary) {
     currentDiary.value = { 
       title: diary.title,
-      content: diary.content
+      content: diary.content,
+      weather: diary.weather || '',
+      mood: diary.mood || '',
+      isPublic: diary.isPublic || false
     }
   }
   showSidebar.value = false
@@ -160,10 +180,31 @@ const saveDiary = () => {
       ...diaryList.value[index],
       title: currentDiary.value.title,
       content: currentDiary.value.content,
+      weather: currentDiary.value.weather,
+      mood: currentDiary.value.mood,
+      isPublic: currentDiary.value.isPublic,
       preview
     }
-    ElMessage.success('保存成功')
-    isEdit.value = false
+    let diaryInput: DiaryInput = {
+      id: diaryList.value[index].id,
+      title: currentDiary.value.title,
+      content: currentDiary.value.content,
+      mood: currentDiary.value.mood,
+      weather: currentDiary.value.weather,
+      created_at: new Date().toISOString(),
+      is_public: currentDiary.value.isPublic,
+      user: {
+        id: userStore.userId?.toString() || '',
+        username: userStore.username,
+      }
+    }
+
+    apiPublishDiary(diaryInput).then(() => {
+      ElMessage.success('保存成功')
+      isEdit.value = false
+    }).catch(() => {
+      ElMessage.error('保存失败')
+    })
   }
 }
 
@@ -172,7 +213,13 @@ const deleteDiary = () => {
   if (index > -1) {
     diaryList.value.splice(index, 1)
     selectedDiaryId.value = null
-    currentDiary.value = { title: '', content: '' }
+    currentDiary.value = { 
+      title: '', 
+      content: '',
+      weather: '',
+      mood: '',
+      isPublic: false
+    }
     ElMessage.success('删除成功')
   }
 }

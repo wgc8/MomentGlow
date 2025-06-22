@@ -1,6 +1,7 @@
 <template>
   <div class="diary-editor">
     <div class="editor-header">
+      <div class="editor-info">
       <el-input
         v-model="title"
         placeholder="日记标题"
@@ -8,6 +9,47 @@
         @input="handleTitleChange"
         :disabled="readonly"
       />
+        <div class="weather-mood">
+          <el-select
+            v-model="weather"
+            placeholder="选择天气"
+            :disabled="readonly"
+            @change="handleWeatherChange"
+            class="weather-select"
+          >
+            <el-option label="晴天" value="sunny" />
+            <el-option label="多云" value="cloudy" />
+            <el-option label="阴天" value="overcast" />
+            <el-option label="小雨" value="light-rain" />
+            <el-option label="大雨" value="heavy-rain" />
+            <el-option label="雪" value="snow" />
+            <el-option label="雾" value="fog" />
+          </el-select>
+          <el-select
+            v-model="mood"
+            placeholder="选择心情"
+            :disabled="readonly"
+            @change="handleMoodChange"
+            class="mood-select"
+          >
+            <el-option label="开心" value="happy" />
+            <el-option label="平静" value="calm" />
+            <el-option label="兴奋" value="excited" />
+            <el-option label="难过" value="sad" />
+            <el-option label="生气" value="angry" />
+            <el-option label="焦虑" value="anxious" />
+            <el-option label="疲惫" value="tired" />
+          </el-select>
+          <el-switch
+            v-model="isPublic"
+            :disabled="readonly"
+            @change="handlePublicChange"
+            active-text="公开"
+            inactive-text="私密"
+            class="public-switch"
+          />
+        </div>
+      </div>
       <div class="editor-actions">
         <el-button v-if="readonly" @click="emit('edit')">
           <el-icon><Edit /></el-icon>
@@ -38,18 +80,24 @@ const props = defineProps<{
   modelValue: {
     title: string
     content: string
+    weather: string
+    mood: string
+    isPublic: boolean
   },
   readonly?: boolean
 }>()
 
 const emit = defineEmits<{
-  (e: 'update:modelValue', value: { title: string, content: string }): void
+  (e: 'update:modelValue', value: { title: string, content: string, weather: string, mood: string, isPublic: boolean }): void
   (e: 'save'): void
   (e: 'delete'): void
   (e: 'edit'): void
 }>()
 
 const title = ref(props.modelValue.title)
+const weather = ref(props.modelValue.weather)
+const mood = ref(props.modelValue.mood)
+const isPublic = ref(props.modelValue.isPublic)
 const editorContainer = ref<HTMLElement | null>(null)
 let editor: Quill | null = null
 
@@ -110,7 +158,10 @@ const initEditor = () => {
       if (editor && !props.readonly) {
         emit('update:modelValue', {
           title: title.value,
-          content: editor.root.innerHTML
+          content: editor.root.innerHTML,
+          weather: weather.value,
+          mood: mood.value,
+          isPublic: isPublic.value
         })
       }
     })
@@ -132,7 +183,10 @@ watch(() => props.readonly, (val) => {
 const handleTitleChange = () => {
   emit('update:modelValue', {
     title: title.value,
-    content: editor?.root.innerHTML || ''
+    content: editor?.root.innerHTML || '',
+    weather: weather.value,
+    mood: mood.value,
+    isPublic: isPublic.value
   })
 }
 
@@ -144,6 +198,39 @@ const handleSave = () => {
 // 删除处理
 const handleDelete = () => {
   emit('delete')
+}
+
+// 天气变化处理
+const handleWeatherChange = () => {
+  emit('update:modelValue', {
+    title: title.value,
+    content: editor?.root.innerHTML || '',
+    weather: weather.value,
+    mood: mood.value,
+    isPublic: isPublic.value
+  })
+}
+
+// 心情变化处理
+const handleMoodChange = () => {
+  emit('update:modelValue', {
+    title: title.value,
+    content: editor?.root.innerHTML || '',
+    weather: weather.value,
+    mood: mood.value,
+    isPublic: isPublic.value
+  })
+}
+
+// 公开状态变化处理
+const handlePublicChange = () => {
+  emit('update:modelValue', {
+    title: title.value,
+    content: editor?.root.innerHTML || '',
+    weather: weather.value,
+    mood: mood.value,
+    isPublic: isPublic.value
+  })
 }
 
 // 生命周期钩子
@@ -164,17 +251,41 @@ onBeforeUnmount(() => {
 
   .editor-header {
     display: flex;
-    justify-content: space-between;
-    align-items: center;
+    flex-direction: column;
+    gap: 10px;
     margin-bottom: 10px;
+    
+    .editor-info {
+      display: flex;
+    align-items: center;
+      gap: 10px;
+      width: 100%;
     
     .title-input {
       width: 300px;
+        flex-shrink: 0;
+      }
+      
+      .weather-mood {
+        display: flex;
+        gap: 10px;
+        flex: 1;
+        
+        .weather-select,
+        .mood-select {
+          width: 120px;
+        }
+        
+        .public-switch {
+          margin-left: 10px;
+        }
+      }
     }
     
     .editor-actions {
       display: flex;
       gap: 10px;
+      justify-content: flex-end;
     }
   }
 
@@ -224,11 +335,25 @@ onBeforeUnmount(() => {
     
     .editor-header {
       padding: 10px;
-      flex-wrap: wrap;
       gap: 10px;
+
+      .editor-info {
+        flex-direction: column;
+        align-items: stretch;
 
       .title-input {
         width: 100%;
+        }
+        
+        .weather-mood {
+          width: 100%;
+          flex-direction: column;
+          
+          .weather-select,
+          .mood-select {
+            width: 100%;
+          }
+        }
       }
 
       .editor-actions {
