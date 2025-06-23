@@ -39,7 +39,7 @@ class DiarySerializer(serializers.ModelSerializer):
             'mood', 'weather', 'location', 'is_public',
             'user', 'tags', 'comments', 'user_username','images'
         ]
-        read_only_fields = ['user']
+        read_only_fields = ['user', 'created_at', 'updated_at']
 
     def create(self, validated_data):
         tags_data = validated_data.pop('tags', [])

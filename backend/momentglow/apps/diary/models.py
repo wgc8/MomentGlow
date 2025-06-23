@@ -26,7 +26,6 @@ class Diary(models.Model):
     weather = models.CharField('天气', max_length=50, blank=True)
     location = models.CharField('位置', max_length=200, blank=True)
     is_public = models.BooleanField('是否公开', default=False)
-    
     class Meta:
         verbose_name = '日记'
         verbose_name_plural = verbose_name
@@ -51,7 +50,7 @@ class DiaryImage(models.Model):
 
 class Comment(models.Model):
     """评论模型"""
-    diary = models.ForeignKey(Diary, on_delete=models.CASCADE, verbose_name='日记')
+    diary = models.ForeignKey(Diary, related_name='comments', on_delete=models.CASCADE, verbose_name='日记')
     user = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name='评论者')
     content = models.TextField('评论内容')
     created_at = models.DateTimeField('创建时间', auto_now_add=True)

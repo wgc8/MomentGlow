@@ -82,7 +82,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { onMounted, ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import { Plus, Search, Menu } from '@element-plus/icons-vue'
 import { useRouter } from 'vue-router'
@@ -90,8 +90,8 @@ import DiaryList from '../components/DiaryList.vue'
 import DiaryEditor from '../components/DiaryEditor.vue'
 import NavBar from '../components/NavBar.vue'
 import { useUserStore } from '@/store/user'
-import { publishDiary as apiPublishDiary, deleteDiary as apiDeleteDiary } from '@/api/diary'
-import type { DiaryInput } from '@/api/diary'
+import { publishDiary as apiPublishDiary, deleteDiary as apiDeleteDiary, getPublicDiaries as apiPublicDiaries } from '@/api/diary'
+import type { DiaryInput, GetPublicDiariesParams } from '@/api/diary'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -168,7 +168,7 @@ const handleEdit = () => {
   isEdit.value = true
 }
 
-const saveDiary = () => {
+const saveDiary = async () => {
   const index = diaryList.value.findIndex(d => d.id === selectedDiaryId.value)
   if (index > -1) {
     const preview = currentDiary.value.content
@@ -176,22 +176,12 @@ const saveDiary = () => {
       .slice(0, 50)
       .replace(/\n/g, ' ') + '...'
     
-    diaryList.value[index] = {
-      ...diaryList.value[index],
-      title: currentDiary.value.title,
-      content: currentDiary.value.content,
-      weather: currentDiary.value.weather,
-      mood: currentDiary.value.mood,
-      isPublic: currentDiary.value.isPublic,
-      preview
-    }
     let diaryInput: DiaryInput = {
       id: diaryList.value[index].id,
       title: currentDiary.value.title,
       content: currentDiary.value.content,
       mood: currentDiary.value.mood,
       weather: currentDiary.value.weather,
-      created_at: new Date().toISOString(),
       is_public: currentDiary.value.isPublic,
       user: {
         id: userStore.userId?.toString() || '',
@@ -199,12 +189,14 @@ const saveDiary = () => {
       }
     }
 
-    apiPublishDiary(diaryInput).then(() => {
+    const res = await apiPublishDiary(diaryInput)
+    if (res && res.data) {
+      // 更新本地日记列表
+      diaryList.value.unshift(res.data)
+      // 弹窗提示保存成功
       ElMessage.success('保存成功')
       isEdit.value = false
-    }).catch(() => {
-      ElMessage.error('保存失败')
-    })
+    }
   }
 }
 
@@ -223,6 +215,32 @@ const deleteDiary = () => {
     ElMessage.success('删除成功')
   }
 }
+// 获取历史日记数据
+const loadDiaries = async (isLoadMore = false) => {
+  try {
+    let params : GetPublicDiariesParams = {
+      user_id: userStore.userId?.toString() || ''
+    }
+    const response = await apiPublicDiaries(params)
+    if (response && response.data && Array.isArray(response.data.results)) {
+      diaryList.value = response.data.results.map((item: any) => ({
+        ...item,
+        preview: item.content.replace(/<[^>]+>/g, '').slice(0, 50) + '...',
+        date: item.created_at ? item.created_at.split('T')[0] : ''
+      })) 
+  } else{
+      diaryList.value = []
+    }
+  } catch (error) {
+    ElMessage.error('加载日记失败')
+    diaryList.value = []
+  }
+}
+
+// 初始化
+onMounted(() => {
+  loadDiaries()
+})
 </script>
 
 <style lang="scss" scoped>
