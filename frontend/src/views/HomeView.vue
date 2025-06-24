@@ -135,6 +135,7 @@ const createNewDiary = () => {
     mood: '',
     isPublic: false
   }
+  //TODO： 这里还是临时添加一个框的交互效果更好一点。但是会导致一个问题，成功创建新的日记之后，临时添加的“新日记”也在列表中
   diaryList.value.unshift(newDiary)
   selectedDiaryId.value = newDiary.id
   currentDiary.value = { 
@@ -192,7 +193,11 @@ const saveDiary = async () => {
     const res = await apiPublishDiary(diaryInput)
     if (res && res.data) {
       // 更新本地日记列表
-      diaryList.value.unshift(res.data)
+      diaryList.value.unshift( {
+        ...res.data,
+        preview: res.data.content.replace(/<[^>]+>/g, '').slice(0, 50) + '...',
+        date: res.data.created_at ? res.data.created_at.split('T')[0] : ''
+      })
       // 弹窗提示保存成功
       ElMessage.success('保存成功')
       isEdit.value = false
