@@ -192,6 +192,8 @@ const saveDiary = async () => {
 
     const res = await apiPublishDiary(diaryInput)
     if (res && res.data) {
+      // 清除临时日记对象
+      diaryList.value.shift();
       // 更新本地日记列表
       diaryList.value.unshift( {
         ...res.data,

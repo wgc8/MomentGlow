@@ -13,14 +13,17 @@
               :value="item.value"
             />
           </el-select>
-          <el-select v-model="timeRange" placeholder="时间范围" clearable>
-            <el-option
-              v-for="item in timeOptions"
-              :key="item.value"
-              :label="item.label"
-              :value="item.value"
-            />
-          </el-select>
+          <el-date-picker
+            v-model="dateRange"
+            type="daterange"
+            range-separator="至"
+            start-placeholder="开始日期"
+            end-placeholder="结束日期"
+            format="YYYY-MM-DD"
+            value-format="YYYY-MM-DD"
+            style="width: 320px;"
+            clearable
+          />
         </div>
       </div>
 
@@ -33,47 +36,45 @@
       </div>
 
       <div v-else class="diary-feed">
-        <el-timeline>
-          <el-timeline-item
-            v-for="diary in filteredDiaries"
-            :key="diary.id"
-            :timestamp="formatDateTime(diary.createdAt)"
-            placement="top"
-          >
-            <el-card class="diary-card">
-              <div class="diary-header">
-                <div class="user-info">
-                  <el-avatar :size="40" :src="diary.user.avatar || '/default-avatar.png'" />
-                  <div class="user-details">
-                    <router-link :to="'/profile/' + diary.user.id" class="username">
-                      {{ diary.user.username }}
-                    </router-link>
-                    <span class="mood-tag" :class="'mood-' + diary.mood">
-                      {{ getMoodText(diary.mood) }}
-                    </span>
+        <div class="timeline-scroll">
+          <el-timeline>
+            <el-timeline-item
+              v-for="diary in filteredDiaries"
+              :key="diary.id"
+              :timestamp="formatDateTime(diary.createdAt)"
+              placement="top"
+            >
+              <el-card class="diary-card">
+                <div class="diary-header">
+                  <div class="user-info">
+                    <el-avatar :size="40" :src="diary.user.avatar || '/default-avatar.png'" />
+                    <div class="user-details">
+                      <router-link :to="'/profile/' + diary.user.id" class="username">
+                        {{ diary.user.username }}
+                      </router-link>
+                      <span class="mood-tag" :class="'mood-' + diary.mood">
+                        {{ getMoodText(diary.mood) }}
+                      </span>
+                    </div>
                   </div>
                 </div>
-              </div>
-              <div class="diary-content" v-html="diary.content"></div>
-              <div class="diary-footer">
-                <div class="diary-actions">
-                  <el-button type="text" @click="handleLike(diary)">
-                    <el-icon><Star /></el-icon>
-                    {{ diary.likes }}
-                  </el-button>
-                  <el-button type="text" @click="handleComment(diary)">
-                    <el-icon><ChatDotRound /></el-icon>
-                    {{ diary.comments }}
-                  </el-button>
+                <div class="diary-content" v-html="diary.content"></div>
+                <div class="diary-footer">
+                  <div class="diary-actions">
+                    <el-button type="text" @click="handleLike(diary)">
+                      <el-icon><Star /></el-icon>
+                      {{ diary.likes }}
+                    </el-button>
+                    <el-button type="text" @click="handleComment(diary)">
+                      <el-icon><ChatDotRound /></el-icon>
+                      {{ diary.comments }}
+                    </el-button>
+                  </div>
                 </div>
-              </div>
-            </el-card>
-          </el-timeline-item>
-        </el-timeline>
-      </div>
-
-      <div class="load-more" v-if="hasMore">
-        <el-button :loading="loadingMore" @click="loadMore">加载更多</el-button>
+              </el-card>
+            </el-timeline-item>
+          </el-timeline>
+        </div>
       </div>
     </div>
   </div>
@@ -108,23 +109,20 @@ const loading = ref(false)
 const loadingMore = ref(false)
 const diaries = ref<Diary[]>([])
 const page = ref(1)
-const hasMore = ref(true)
+const hasMore = ref("")
 const selectedMood = ref('')
 const timeRange = ref('')
+const dateRange = ref<[string, string] | []>([])
 
 // 筛选选项
 const moodOptions = [
   { label: '开心', value: 'happy' },
   { label: '难过', value: 'sad' },
   { label: '生气', value: 'angry' },
-  { label: '平静', value: 'neutral' },
-  { label: '兴奋', value: 'excited' }
-]
-
-const timeOptions = [
-  { label: '今天', value: 'today' },
-  { label: '本周', value: 'week' },
-  { label: '本月', value: 'month' }
+  { label: '平静', value: 'calm' },
+  { label: '兴奋', value: 'excited' },
+  { label: '焦虑', value: 'anxious' },
+  { label: '疲惫', value: 'tired' }
 ]
 
 // 计算属性
@@ -135,26 +133,13 @@ const filteredDiaries = computed(() => {
     result = result.filter(diary => diary.mood === selectedMood.value)
   }
   
-  if (timeRange.value) {
-    const now = new Date()
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
-    
+  if (dateRange.value && dateRange.value.length === 2) {
+    const [start, end] = dateRange.value
+    const startDate = new Date(start)
+    const endDate = new Date(end)
     result = result.filter(diary => {
       const diaryDate = new Date(diary.createdAt)
-      switch (timeRange.value) {
-        case 'today':
-          return diaryDate >= today
-        case 'week':
-          const weekAgo = new Date(today)
-          weekAgo.setDate(weekAgo.getDate() - 7)
-          return diaryDate >= weekAgo
-        case 'month':
-          const monthAgo = new Date(today)
-          monthAgo.setMonth(monthAgo.getMonth() - 1)
-          return diaryDate >= monthAgo
-        default:
-          return true
-      }
+      return diaryDate >= startDate && diaryDate <= endDate
     })
   }
   
@@ -175,14 +160,14 @@ const loadDiaries = async (isLoadMore = false) => {
       mood: selectedMood.value,
       timeRange: timeRange.value
     })
-    
+    let diaryInfo = response.data.results
     if (isLoadMore) {
-      diaries.value.push(...response.data)
+      diaries.value.push(...diaryInfo)
     } else {
-      diaries.value = response.data
+      diaries.value = diaryInfo
     }
     
-    hasMore.value = response.hasMore
+    hasMore.value = response.data.next
     if (hasMore.value) {
       page.value++
     }
@@ -223,8 +208,10 @@ const getMoodText = (mood: string) => {
     'happy': '开心',
     'sad': '难过',
     'angry': '生气',
-    'neutral': '平静',
-    'excited': '兴奋'
+    'calm': '平静',
+    'excited': '兴奋',
+    'anxious': '焦虑',
+    'tired': '疲惫'
   }
   return moodMap[mood] || mood
 }
@@ -233,6 +220,15 @@ const getMoodText = (mood: string) => {
 watch([selectedMood, timeRange], () => {
   page.value = 1
   loadDiaries()
+})
+
+// 新增监听dateRange变化，自动格式化timeRange
+watch(dateRange, (val) => {
+  if (val && val.length === 2) {
+    timeRange.value = `${val[0]},${val[1]}`
+  } else {
+    timeRange.value = ''
+  }
 })
 
 // 初始化
@@ -272,6 +268,13 @@ onMounted(() => {
 }
 
 .diary-feed {
+  .timeline-scroll {
+    height: calc(100vh - 180px); // 头部+外边距约80+30+20+50
+    min-height: 300px;
+    overflow-y: auto;
+    padding-right: 8px;
+    box-sizing: border-box;
+  }
   .diary-card {
     margin-bottom: 20px;
     
@@ -307,8 +310,10 @@ onMounted(() => {
             &.mood-happy { background-color: #f0f9eb; color: #67c23a; }
             &.mood-sad { background-color: #f4f4f5; color: #909399; }
             &.mood-angry { background-color: #fef0f0; color: #f56c6c; }
-            &.mood-neutral { background-color: #f4f4f5; color: #909399; }
+            &.mood-calm { background-color: #f4f4f5; color: #909399; }
             &.mood-excited { background-color: #fdf6ec; color: #e6a23c; }
+            &.mood-anxious { background-color: #e8f4fd; color: #409EFF; }
+            &.mood-tired { background-color: #f3f3f3; color: #b0b0b0; }
           }
         }
       }
@@ -346,11 +351,6 @@ onMounted(() => {
   padding: 40px 0;
 }
 
-.load-more {
-  text-align: center;
-  margin-top: 20px;
-}
-
 // 移动端适配
 @media screen and (max-width: 768px) {
   .feed-content {
@@ -364,6 +364,13 @@ onMounted(() => {
       .el-select {
         width: 100%;
       }
+    }
+  }
+
+  .diary-feed {
+    .timeline-scroll {
+      height: calc(100vh - 160px);
+      min-height: 200px;
     }
   }
 }
