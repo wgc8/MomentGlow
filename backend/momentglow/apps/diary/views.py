@@ -54,13 +54,6 @@ class DiaryViewSet(CustomAPIView, viewsets.ModelViewSet):
     search_fields = ['title', 'content']
     ordering_fields = ['created_at', 'updated_at']
 
-    # def get_queryset(self):
-    #     user = self.request.user
-    #     # 返回用户自己的日记和其他用户公开的日记
-    #     return Diary.objects.filter(
-    #         models.Q(user=user) | models.Q(is_public=True)
-    #     ).select_related('user').prefetch_related('tags', 'comments')
-
     def get_queryset(self):
         user = self.request.user
         queryset = Diary.objects.filter(models.Q(user=user)).select_related('user').prefetch_related('tags', 'comments')
