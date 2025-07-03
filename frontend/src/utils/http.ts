@@ -82,6 +82,17 @@ http.interceptors.response.use(
   },
   error => {
     if (error.response) {
+      // 检查 refresh token 过期特殊情况
+      if (
+        error.response.data &&
+        error.response.data.code === 'token_not_valid' &&
+        error.response.data.detail === 'Token is expired'
+      ) {
+        const userStore = useUserStore()
+        userStore.logout()
+        window.location.href = '/login'
+        return Promise.reject(error)
+      }
       switch (error.response.status) {
         case 401:
           // 未授权，尝试刷新token

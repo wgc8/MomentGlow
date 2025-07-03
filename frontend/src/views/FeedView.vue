@@ -36,12 +36,12 @@
       </div>
 
       <div v-else class="diary-feed">
-        <div class="timeline-scroll">
+        <div class="timeline-scroll" ref="scrollRef" @scroll="handleScroll">
           <el-timeline>
             <el-timeline-item
-              v-for="diary in filteredDiaries"
+              v-for="diary in diaries"
               :key="diary.id"
-              :timestamp="formatDateTime(diary.createdAt)"
+              :timestamp="formatDateTime(diary.created_at)"
               placement="top"
             >
               <el-card class="diary-card">
@@ -63,17 +63,20 @@
                   <div class="diary-actions">
                     <el-button type="text" @click="handleLike(diary)">
                       <el-icon><Star /></el-icon>
-                      {{ diary.likes }}
+                      点赞
                     </el-button>
                     <el-button type="text" @click="handleComment(diary)">
                       <el-icon><ChatDotRound /></el-icon>
-                      {{ diary.comments }}
+                      评论({{ diary.comments.length }})
                     </el-button>
                   </div>
                 </div>
               </el-card>
             </el-timeline-item>
           </el-timeline>
+          <div v-if="loadingMore" style="text-align:center;padding:10px;">
+            <el-skeleton :rows="1" animated />
+          </div>
         </div>
       </div>
     </div>
@@ -81,40 +84,47 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue'
+import { throttle } from '@/utils/throttle';
+import { ref, computed, onMounted, watch, nextTick } from 'vue'
 import { ElMessage } from 'element-plus'
-import { Star, ChatDotRound } from '@element-plus/icons-vue'
+import { Star, ChatDotRound, Loading } from '@element-plus/icons-vue'
 import NavBar from '@/components/NavBar.vue'
 import { getPublicDiaries, likeDiary } from '@/api/diary'
+import http from '@/utils/http'
 
-interface User {
+interface DiaryUser {
   id: number
   username: string
-  avatar: string
+  email: string
+  avatar?: string
 }
 
 interface Diary {
   id: number
+  title: string
   content: string
   mood: string
-  createdAt: string
-  user: User
-  likes: number
-  comments: number
-  isLiked: boolean
+  weather: string
+  location: string
+  created_at: string
+  updated_at: string
+  is_public: boolean
+  user: DiaryUser
+  tags: any[]
+  comments: any[]
+  user_username: string
+  images: any[]
 }
 
-// 状态
-const loading = ref(false)
+const loading = ref(false) // 加载状态
 const loadingMore = ref(false)
 const diaries = ref<Diary[]>([])
-const page = ref(1)
-const hasMore = ref("")
+const nextUrl = ref<string | null>(null)
 const selectedMood = ref('')
 const timeRange = ref('')
 const dateRange = ref<[string, string] | []>([])
+const scrollRef = ref(null);
 
-// 筛选选项
 const moodOptions = [
   { label: '开心', value: 'happy' },
   { label: '难过', value: 'sad' },
@@ -125,52 +135,36 @@ const moodOptions = [
   { label: '疲惫', value: 'tired' }
 ]
 
-// 计算属性
-const filteredDiaries = computed(() => {
-  let result = [...diaries.value]
-  
-  if (selectedMood.value) {
-    result = result.filter(diary => diary.mood === selectedMood.value)
-  }
-  
-  if (dateRange.value && dateRange.value.length === 2) {
-    const [start, end] = dateRange.value
-    const startDate = new Date(start)
-    const endDate = new Date(end)
-    result = result.filter(diary => {
-      const diaryDate = new Date(diary.createdAt)
-      return diaryDate >= startDate && diaryDate <= endDate
-    })
-  }
-  
-  return result
-})
+const filteredDiaries = computed(() => diaries.value)
 
-// 方法
 const loadDiaries = async (isLoadMore = false) => {
   if (isLoadMore) {
     loadingMore.value = true
   } else {
     loading.value = true
   }
-  
   try {
-    const response = await getPublicDiaries({
-      page: page.value,
-      mood: selectedMood.value,
-      timeRange: timeRange.value
-    })
-    let diaryInfo = response.data.results
+    let response
+    if (isLoadMore && nextUrl.value) {
+      // 直接用 nextUrl 请求
+      console.log("123",nextUrl.value)
+      response = await http.get(nextUrl.value)
+      // fetch(nextUrl.value).then(res => res.json())
+    } else {
+      response = await getPublicDiaries({
+        mood: selectedMood.value,
+        timeRange: timeRange.value
+      })
+    }
+    const resp = response.data
+    const diaryInfo = resp.results
     if (isLoadMore) {
       diaries.value.push(...diaryInfo)
     } else {
       diaries.value = diaryInfo
     }
-    
-    hasMore.value = response.data.next
-    if (hasMore.value) {
-      page.value++
-    }
+    nextUrl.value = resp.next
+    console.log("456", nextUrl.value)
   } catch (error) {
     ElMessage.error('加载动态失败')
   } finally {
@@ -179,22 +173,16 @@ const loadDiaries = async (isLoadMore = false) => {
   }
 }
 
-const loadMore = () => {
-  loadDiaries(true)
-}
-
 const handleLike = async (diary: Diary) => {
   try {
     await likeDiary(diary.id)
-    diary.isLiked = !diary.isLiked
-    diary.likes += diary.isLiked ? 1 : -1
+    // 可选：本地更新点赞数
   } catch (error) {
     ElMessage.error('操作失败')
   }
 }
 
 const handleComment = (diary: Diary) => {
-  // TODO: 实现评论功能
   ElMessage.info('评论功能开发中')
 }
 
@@ -216,13 +204,10 @@ const getMoodText = (mood: string) => {
   return moodMap[mood] || mood
 }
 
-// 监听筛选条件变化
 watch([selectedMood, timeRange], () => {
-  page.value = 1
   loadDiaries()
 })
 
-// 新增监听dateRange变化，自动格式化timeRange
 watch(dateRange, (val) => {
   if (val && val.length === 2) {
     timeRange.value = `${val[0]},${val[1]}`
@@ -231,10 +216,22 @@ watch(dateRange, (val) => {
   }
 })
 
-// 初始化
 onMounted(() => {
   loadDiaries()
-})
+});
+
+// 处理滚动事件
+const handleScroll = throttle(() => {
+  if (!scrollRef.value || loading.value) return;
+  
+  const { scrollTop, scrollHeight, clientHeight } = scrollRef.value;
+  
+  // 判断是否滚动到底部（误差阈值 100px） TODO 增加向上滚动判断
+  if (scrollTop + clientHeight >= scrollHeight - 100) {
+    loadDiaries(true); // 加载下一页数据
+  }
+},300);
+
 </script>
 
 <style lang="scss" scoped>
