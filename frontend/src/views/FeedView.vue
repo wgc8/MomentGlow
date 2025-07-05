@@ -137,38 +137,46 @@ const moodOptions = [
 
 const filteredDiaries = computed(() => diaries.value)
 
-const loadDiaries = async (isLoadMore = false) => {
-  if (isLoadMore) {
-    loadingMore.value = true
-  } else {
+// 根据筛选，获取公开日记
+const loadDiaries = async () => {
     loading.value = true
-  }
   try {
-    let response
-    if (isLoadMore && nextUrl.value) {
-      // 直接用 nextUrl 请求
-      console.log("123",nextUrl.value)
-      response = await http.get(nextUrl.value)
-      // fetch(nextUrl.value).then(res => res.json())
-    } else {
-      response = await getPublicDiaries({
+    let response = await getPublicDiaries({
         mood: selectedMood.value,
         timeRange: timeRange.value
       })
-    }
     const resp = response.data
     const diaryInfo = resp.results
-    if (isLoadMore) {
-      diaries.value.push(...diaryInfo)
-    } else {
-      diaries.value = diaryInfo
-    }
+    diaries.value = diaryInfo
     nextUrl.value = resp.next
-    console.log("456", nextUrl.value)
+
   } catch (error) {
     ElMessage.error('加载动态失败')
   } finally {
     loading.value = false
+  }
+}
+
+// 加载更多日记
+const appendMoreDiaries = async () => {
+  loadingMore.value = true
+  try {
+    let response
+    if (null === nextUrl.value)
+    {
+      ElMessage.info('加载到头了(￣▽￣)"')
+      return
+    }
+    // 直接用 nextUrl 请求
+    response = await http.get(nextUrl.value)
+
+    const resp = response.data
+    const diaryInfo = resp.results
+    diaries.value.push(...diaryInfo)
+    nextUrl.value = resp.next
+  } catch (error) {
+    ElMessage.error('加载动态失败')
+  } finally {
     loadingMore.value = false
   }
 }
@@ -221,14 +229,17 @@ onMounted(() => {
 });
 
 // 处理滚动事件
+let lastScrollTop = 0;
 const handleScroll = throttle(() => {
   if (!scrollRef.value || loading.value) return;
-  
+
   const { scrollTop, scrollHeight, clientHeight } = scrollRef.value;
-  
+  const isScrollDown = scrollTop > lastScrollTop;
+  lastScrollTop = scrollTop;
+
   // 判断是否滚动到底部（误差阈值 100px） TODO 增加向上滚动判断
-  if (scrollTop + clientHeight >= scrollHeight - 100) {
-    loadDiaries(true); // 加载下一页数据
+  if (isScrollDown && scrollTop + clientHeight >= scrollHeight - 100) {
+    appendMoreDiaries(); // 加载下一页数据
   }
 },300);
 
