@@ -17,7 +17,7 @@ export interface DiaryInput {
   // isLiked: boolean
 }
 
-export interface GetPublicDiariesParams {
+export interface GetDiariesRequestParams {
   user_id?: string
   page?: number
   mood?: string
@@ -36,8 +36,13 @@ export interface GetPublicDiariesResponse {
 }
 
 // 获取公开日记列表
-export const getPublicDiaries= (params: GetPublicDiariesParams) => {
+export const getPersonalDiaries= (params: GetDiariesRequestParams) => {
   return request.get<GetPublicDiariesResponse>('/api/diaries/', { params })
+}
+
+// 获取公开日记列表
+export const getPublicDiaries= (params: GetDiariesRequestParams) => {
+  return request.get<GetPublicDiariesResponse>('/api/diaries/public/', { params })
 }
 
 // 点赞日记

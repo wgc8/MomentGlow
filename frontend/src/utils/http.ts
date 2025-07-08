@@ -114,7 +114,7 @@ http.interceptors.response.use(
           ElMessage.error('服务器错误')
           break
         default:
-          ElMessage.error(error.response.data.message || '请求失败')
+          ElMessage.error(error.response.data.message || '请求失败: ' + error.response.status)
       }
     } else {
       ElMessage.error('网络错误，请检查您的网络连接')

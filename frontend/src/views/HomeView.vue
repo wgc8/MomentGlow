@@ -90,8 +90,8 @@ import DiaryList from '../components/DiaryList.vue'
 import DiaryEditor from '../components/DiaryEditor.vue'
 import NavBar from '../components/NavBar.vue'
 import { useUserStore } from '@/store/user'
-import { publishDiary as apiPublishDiary, deleteDiary as apiDeleteDiary, getPublicDiaries as apiPublicDiaries } from '@/api/diary'
-import type { DiaryInput, GetPublicDiariesParams } from '@/api/diary'
+import { publishDiary as apiPublishDiary, deleteDiary as apiDeleteDiary, getPersonalDiaries as apiPersonalDiaries } from '@/api/diary'
+import type { DiaryInput, GetDiariesRequestParams } from '@/api/diary'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -225,10 +225,10 @@ const deleteDiary = () => {
 // 获取历史日记数据
 const loadDiaries = async (isLoadMore = false) => {
   try {
-    let params : GetPublicDiariesParams = {
+    let params : GetDiariesRequestParams = {
       user_id: userStore.userId?.toString() || ''
     }
-    const response = await apiPublicDiaries(params)
+    const response = await apiPersonalDiaries(params)
     if (response && response.data && Array.isArray(response.data.results)) {
       diaryList.value = response.data.results.map((item: any) => ({
         ...item,
