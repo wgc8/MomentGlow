@@ -54,6 +54,7 @@ class DiaryViewSet(CustomAPIView, viewsets.ModelViewSet):
     search_fields = ['title', 'content']
     ordering_fields = ['created_at', 'updated_at']
 
+    # 处理查询
     def get_queryset(self):
         user = self.request.user
         queryset = Diary.objects.filter(models.Q(user=user)).select_related('user').prefetch_related('tags', 'comments')
@@ -75,7 +76,7 @@ class DiaryViewSet(CustomAPIView, viewsets.ModelViewSet):
             except ValueError:
                 pass
         return queryset
-
+    # 处理创建
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -83,9 +84,11 @@ class DiaryViewSet(CustomAPIView, viewsets.ModelViewSet):
         headers = self.get_success_headers(serializer.data)
         return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
 
+    # 处理创建
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
 
+    # 处理添加评论
     @action(detail=True, methods=['post'])
     def add_comment(self, request, pk=None):
         diary = self.get_object()
@@ -94,6 +97,7 @@ class DiaryViewSet(CustomAPIView, viewsets.ModelViewSet):
             serializer.save(diary=diary, user=request.user)
         return Response(serializer.data)
 
+    # 处理获取公共日记
     @action(detail=False, methods=['get'], url_path='public', permission_classes=[AllowAny])
     def public(self, request):
         queryset = Diary.objects.filter(is_public=True).select_related('user').prefetch_related('tags', 'comments')
@@ -117,6 +121,32 @@ class DiaryViewSet(CustomAPIView, viewsets.ModelViewSet):
         if page is not None:
             serializer = self.get_serializer(page, many=True)
             return self.get_paginated_response(serializer.data)
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
+
+    # 处理修改日记
+    def update(self, request, *args, **kwargs):
+        diary = self.get_object()
+        serializer = self.get_serializer(diary, data=request.data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
+        return Response(serializer.data)
+
+    # 处理删除日记
+    def destroy(self, request, *args, **kwargs):
+        diary = self.get_object()
+        self.perform_destroy(diary)
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+    # 处理获取日记详情
+    def retrieve(self, request, *args, **kwargs):
+        diary = self.get_object()
+        serializer = self.get_serializer(diary)
+        return Response(serializer.data)
+
+    # 处理获取日记列表
+    def list(self, request, *args, **kwargs):
+        queryset = self.filter_queryset(self.get_queryset())
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
 

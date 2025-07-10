@@ -36,7 +36,7 @@ export interface GetPublicDiariesResponse {
 }
 
 // 获取公开日记列表
-export const getPersonalDiaries= (params: GetDiariesRequestParams) => {
+export const getDiaries= (params: GetDiariesRequestParams) => {
   return request.get<GetPublicDiariesResponse>('/api/diaries/', { params })
 }
 
@@ -68,6 +68,11 @@ export const addComment = (diaryId: number, content: string) => {
 // 发布日记
 export const publishDiary = (diary: DiaryInput) => {
   return request.post('/api/diaries/', diary)
+}
+
+// 修改日记
+export const updateDiary = (diary: DiaryInput) => {
+  return request.put(`/api/diaries/${diary.id}/`, diary)
 }
 
 // 删除日记

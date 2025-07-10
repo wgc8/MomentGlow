@@ -90,7 +90,7 @@ import DiaryList from '../components/DiaryList.vue'
 import DiaryEditor from '../components/DiaryEditor.vue'
 import NavBar from '../components/NavBar.vue'
 import { useUserStore } from '@/store/user'
-import { publishDiary as apiPublishDiary, deleteDiary as apiDeleteDiary, getPersonalDiaries as apiPersonalDiaries } from '@/api/diary'
+import { publishDiary as apiPublishDiary, deleteDiary as apiDeleteDiary, getDiaries as apiGetDiaries } from '@/api/diary'
 import type { DiaryInput, GetDiariesRequestParams } from '@/api/diary'
 
 const router = useRouter()
@@ -228,9 +228,9 @@ const loadDiaries = async (isLoadMore = false) => {
     let params : GetDiariesRequestParams = {
       user_id: userStore.userId?.toString() || ''
     }
-    const response = await apiPersonalDiaries(params)
-    if (response && response.data && Array.isArray(response.data.results)) {
-      diaryList.value = response.data.results.map((item: any) => ({
+    const response = await apiGetDiaries(params)
+    if (response && response.data && Array.isArray(response.data)) {
+      diaryList.value = response.data.map((item: any) => ({
         ...item,
         preview: item.content.replace(/<[^>]+>/g, '').slice(0, 50) + '...',
         date: item.created_at ? item.created_at.split('T')[0] : ''
