@@ -161,14 +161,13 @@ const loadDiaries = async () => {
 const appendMoreDiaries = async () => {
   loadingMore.value = true
   try {
-    let response
     if (null === nextUrl.value)
     {
       ElMessage.info('加载到头了(￣▽￣)"')
       return
     }
     // 直接用 nextUrl 请求
-    response = await http.get(nextUrl.value)
+    const response = await http.get(nextUrl.value)
 
     const resp = response.data
     const diaryInfo = resp.results

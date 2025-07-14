@@ -90,7 +90,9 @@ import DiaryList from '../components/DiaryList.vue'
 import DiaryEditor from '../components/DiaryEditor.vue'
 import NavBar from '../components/NavBar.vue'
 import { useUserStore } from '@/store/user'
-import { publishDiary as apiPublishDiary, deleteDiary as apiDeleteDiary, getDiaries as apiGetDiaries } from '@/api/diary'
+import { publishDiary as apiPublishDiary, 
+  deleteDiary as apiDeleteDiary, 
+  getDiaries as apiGetDiaries } from '@/api/diary'
 import type { DiaryInput, GetDiariesRequestParams } from '@/api/diary'
 
 const router = useRouter()
@@ -169,6 +171,7 @@ const handleEdit = () => {
   isEdit.value = true
 }
 
+// 上传日记
 const saveDiary = async () => {
   const index = diaryList.value.findIndex(d => d.id === selectedDiaryId.value)
   if (index > -1) {
@@ -207,19 +210,31 @@ const saveDiary = async () => {
   }
 }
 
-const deleteDiary = () => {
+const deleteDiary = async () => {
   const index = diaryList.value.findIndex(d => d.id === selectedDiaryId.value)
   if (index > -1) {
-    diaryList.value.splice(index, 1)
-    selectedDiaryId.value = null
-    currentDiary.value = { 
-      title: '', 
-      content: '',
-      weather: '',
-      mood: '',
-      isPublic: false
+    try {
+      const diaryId = diaryList.value.at(index)?.id
+      if (diaryId === null || diaryId === undefined) {
+        ElMessage.error('删除参数错误')
+      }
+      else{
+        const response = await apiDeleteDiary(diaryId)
+        console.log("delete response: ", response)
+          diaryList.value.splice(index, 1)
+          selectedDiaryId.value = null
+          currentDiary.value = {
+            title: '', 
+            content: '',
+            weather: '',
+            mood: '',
+            isPublic: false
+          }
+        ElMessage.success('删除成功')
+      }
+    } catch(error) {
+    ElMessage.error('删除失败')
     }
-    ElMessage.success('删除成功')
   }
 }
 // 获取历史日记数据
