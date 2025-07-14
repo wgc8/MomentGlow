@@ -92,7 +92,8 @@ import NavBar from '../components/NavBar.vue'
 import { useUserStore } from '@/store/user'
 import { publishDiary as apiPublishDiary, 
   deleteDiary as apiDeleteDiary, 
-  getDiaries as apiGetDiaries } from '@/api/diary'
+  getDiaries as apiGetDiaries,
+  updateDiary as apiUpdateDiary } from '@/api/diary'
 import type { DiaryInput, GetDiariesRequestParams } from '@/api/diary'
 
 const router = useRouter()
@@ -128,7 +129,7 @@ const diaryList = ref<Diary[]>([])
 // 方法
 const createNewDiary = () => {
   const newDiary = {
-    id: Date.now(),
+    id: -1,
     title: '新日记',
     preview: '',
     date: new Date().toISOString().split('T')[0],
@@ -174,13 +175,12 @@ const handleEdit = () => {
 // 上传日记
 const saveDiary = async () => {
   const index = diaryList.value.findIndex(d => d.id === selectedDiaryId.value)
-  if (index > -1) {
-    const preview = currentDiary.value.content
-      .replace(/<[^>]+>/g, '')
-      .slice(0, 50)
-      .replace(/\n/g, ' ') + '...'
-    
-    let diaryInput: DiaryInput = {
+  const diaryId = diaryList.value.at(index)?.id
+  if (diaryId === undefined || diaryId === null) {
+    ElMessage.error('日记ID错误')
+    return
+  }
+  let diaryInput: DiaryInput = {
       id: diaryList.value[index].id,
       title: currentDiary.value.title,
       content: currentDiary.value.content,
@@ -192,33 +192,64 @@ const saveDiary = async () => {
         username: userStore.username,
       }
     }
-
-    const res = await apiPublishDiary(diaryInput)
-    if (res && res.data) {
-      // 清除临时日记对象
-      diaryList.value.shift();
-      // 更新本地日记列表
-      diaryList.value.unshift( {
-        ...res.data,
-        preview: res.data.content.replace(/<[^>]+>/g, '').slice(0, 50) + '...',
-        date: res.data.created_at ? res.data.created_at.split('T')[0] : ''
-      })
-      // 弹窗提示保存成功
-      ElMessage.success('保存成功')
-      isEdit.value = false
-    }
+    // 日记id<0，新日记，在创建
+  if (diaryId < 0) {
+    publishDiary(diaryInput)
+  } else {
+    updateDiary(diaryInput)
   }
 }
 
+// 发布日记
+const publishDiary = async(diaryInput: DiaryInput) => {
+  try {    
+    const res = await apiPublishDiary(diaryInput)
+      if (res && res.data) {
+        // 清除临时日记对象
+        diaryList.value.shift();
+        // 更新本地日记列表
+        diaryList.value.unshift( {
+          ...res.data,
+          preview: res.data.content.replace(/<[^>]+>/g, '').slice(0, 50) + '...',
+          date: res.data.created_at ? res.data.created_at.split('T')[0] : ''
+        })
+        // 弹窗提示保存成功
+        ElMessage.success('发布成功')
+        isEdit.value = false
+      }
+  } catch(error) {
+    ElMessage.success('发布失败')
+  }
+}
+
+// 更新日记
+const updateDiary = async(diaryInput: DiaryInput) => {
+  const index = diaryList.value.findIndex(d => d.id === selectedDiaryId.value)
+  const diaryId = diaryList.value.at(index)?.id
+      if (diaryId === null || diaryId === undefined) {
+        ElMessage.error('更新参数错误')
+        return
+      }
+      try {
+        const response = await apiUpdateDiary(diaryInput)
+        console.log("update diary response: ", response)
+        isEdit.value = false
+        ElMessage.success('更新成功')
+      } catch(error) {
+        ElMessage.error('更新失败')
+      }
+
+}
+
+// 删除日记
 const deleteDiary = async () => {
   const index = diaryList.value.findIndex(d => d.id === selectedDiaryId.value)
-  if (index > -1) {
-    try {
-      const diaryId = diaryList.value.at(index)?.id
+  const diaryId = diaryList.value.at(index)?.id
       if (diaryId === null || diaryId === undefined) {
         ElMessage.error('删除参数错误')
+        return
       }
-      else{
+    try {
         const response = await apiDeleteDiary(diaryId)
         console.log("delete response: ", response)
           diaryList.value.splice(index, 1)
@@ -231,11 +262,9 @@ const deleteDiary = async () => {
             isPublic: false
           }
         ElMessage.success('删除成功')
-      }
-    } catch(error) {
+      } catch(error) {
     ElMessage.error('删除失败')
     }
-  }
 }
 // 获取历史日记数据
 const loadDiaries = async (isLoadMore = false) => {
