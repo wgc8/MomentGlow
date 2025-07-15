@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from django.contrib.auth.models import User
+from .models import CustomUser
 from django.contrib.auth.password_validation import validate_password
 from django.contrib.auth import authenticate
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -8,10 +8,11 @@ class RegisterSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, required=True, validators=[validate_password])
     password2 = serializers.CharField(write_only=True, required=True)
     email = serializers.EmailField(required=True)
+    avatar = serializers.ImageField(required=False, allow_null=True)
 
     class Meta:
-        model = User
-        fields = ('username', 'password', 'password2', 'email')
+        model = CustomUser
+        fields = ('username', 'password', 'password2', 'email', 'avatar')
 
     def validate(self, attrs):
         if attrs['password'] != attrs['password2']:
@@ -19,17 +20,22 @@ class RegisterSerializer(serializers.ModelSerializer):
         return attrs
 
     def create(self, validated_data):
-        user = User.objects.create_user(
+        avatar = validated_data.pop('avatar', None)
+        user = CustomUser.objects.create_user(
             username=validated_data['username'],
             email=validated_data['email'],
             password=validated_data['password']
         )
+        if avatar:
+            user.avatar = avatar
+            user.save()
         return user
 
 class UserSerializer(serializers.ModelSerializer):
+    avatar = serializers.ImageField(read_only=True)
     class Meta:
-        model = User
-        fields = ('id', 'username', 'email')
+        model = CustomUser
+        fields = ('id', 'username', 'email', 'avatar')
         read_only_fields = ('id',)
 
 class LoginSerializer(serializers.Serializer):

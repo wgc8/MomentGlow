@@ -1,5 +1,5 @@
 from django.db import models
-from django.contrib.auth.models import User
+from django.conf import settings
 
 class Tag(models.Model):
     """标签模型"""
@@ -16,7 +16,7 @@ class Tag(models.Model):
 
 class Diary(models.Model):
     """日记模型"""
-    user = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name='作者')
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, verbose_name='作者')
     title = models.CharField('标题', max_length=200)
     content = models.TextField('内容')
     tags = models.ManyToManyField(Tag, blank=True, verbose_name='标签')
@@ -51,7 +51,7 @@ class DiaryImage(models.Model):
 class Comment(models.Model):
     """评论模型"""
     diary = models.ForeignKey(Diary, related_name='comments', on_delete=models.CASCADE, verbose_name='日记')
-    user = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name='评论者')
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, verbose_name='评论者')
     content = models.TextField('评论内容')
     created_at = models.DateTimeField('创建时间', auto_now_add=True)
     

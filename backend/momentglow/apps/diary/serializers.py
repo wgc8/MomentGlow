@@ -1,10 +1,12 @@
 from rest_framework import serializers
 from .models import Diary, DiaryImage, Tag, Comment
-from django.contrib.auth.models import User
+from momentglow.apps.user.models import CustomUser
+# 移除 from django.contrib.auth.models import User
+# 如有UserSerializer，需改为引用自定义用户序列化器
 
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
-        model = User
+        model = CustomUser
         fields = ['id', 'username', 'email']
 
 class TagSerializer(serializers.ModelSerializer):
