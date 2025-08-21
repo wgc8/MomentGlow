@@ -73,24 +73,24 @@ export const uploadUserAvatar = async (file: File) => {
   return response.data
 }
 
-// 获取用户日记列表
-export const getUserDiaries = async (userId: number) => {
-  const response = await http.get(`/api/users/${userId}/diaries`)
-  return response.data as DiaryEntry[]
-}
+// // 获取用户日记列表
+// export const getUserDiaries = async (userId: number) => {
+//   const response = await http.get(`/api/users/${userId}/diaries`)
+//   return response.data as DiaryEntry[]
+// }
 
-export const getUserDiaryStats = async (userId: number) => {
-  const response = await http.get(`/api/users/${userId}/diary-stats`)
-  return response.data as DiaryStats[]
-}
+// export const getUserDiaryStats = async (userId: number) => {
+//   const response = await http.get(`/api/users/${userId}/diary-stats`)
+//   return response.data as DiaryStats[]
+// }
 
-// 更新日记内容
-export const updateDiary = async (diaryId: number, content: string, mood: string) => {
-  const response = await http.put(`/api/diaries/${diaryId}`, { content, mood })
-  return response.data
-}
+// // 更新日记内容
+// export const updateDiary = async (diaryId: number, content: string, mood: string) => {
+//   const response = await http.put(`/api/diaries/${diaryId}`, { content, mood })
+//   return response.data
+// }
 
-// 删除日记
-export const deleteDiary = async (diaryId: number) => {
-  await http.delete(`/api/diaries/${diaryId}`)
-} 
+// // 删除日记
+// export const deleteDiary = async (diaryId: number) => {
+//   await http.delete(`/api/diaries/${diaryId}`)
+// } 

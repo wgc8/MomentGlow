@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div class="profile-page">
     <nav-bar />
     <div class="profile-container">
       <div v-if="loading" class="loading">
@@ -7,8 +7,8 @@
         <p>加载中...</p>
       </div>
       <div v-else class="profile-content">
-      <!-- 用户信息部分 -->
-      <div class="profile-header">
+        <!-- 用户信息部分 -->
+        <div class="profile-header">
         <div class="avatar-container">
           <avatar-upload 
             v-if="isOwnProfile" 
@@ -75,13 +75,13 @@
       <!-- 日记列表 -->
       <div class="diary-list">
         <h2>日记列表</h2>
-        <div v-if="diaries.length === 0" class="no-diaries">
+        <div v-if="currentMonthDiaries.length === 0" class="no-diaries">
           <p>暂无日记记录</p>
         </div>
         <div v-else class="diary-entries">
-          <div v-for="diary in diaries" :key="diary.id" class="diary-entry">
+          <div v-for="diary in currentMonthDiaries" :key="diary.id" class="diary-entry">
             <div class="diary-header">
-              <div class="diary-date">{{ formatDateTime(diary.createdAt) }}</div>
+              <div class="diary-date">{{ formatDateTime(diary.created_at) }}</div>
               <div class="diary-mood">心情：{{ getMoodText(diary.mood) }}</div>
               <div v-if="isOwnProfile" class="diary-actions">
                 <button @click="editDiary(diary)" class="action-btn edit">编辑</button>
@@ -105,7 +105,7 @@
                 <button @click="cancelDiaryEdit" class="cancel-btn">取消</button>
               </div>
             </div>
-            <div v-else class="diary-content">{{ diary.content }}</div>
+            <div v-else class="diary-content">{{ diary.title }}</div>
           </div>
         </div>
       </div>
@@ -130,11 +130,15 @@
 import { ref, computed, onMounted, reactive } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useUserStore } from '@/store/user'
-import { getUserInfo, getUserDiaries, getUserDiaryStats, updateUserInfo, updateDiary, deleteDiary } from '@/api/user'
-import type { UserInfo, DiaryEntry, DiaryStats } from '@/api/user'
+import { getUserInfo,  updateUserInfo} from '@/api/user'
+import { getDiaries} from '@/api/diary'
+import http from '@/utils/http'
+import type { DiaryInfo } from '@/api/diary'
+import type { UserInfo } from '@/api/user'
 import NavBar from '@/components/NavBar.vue'
 import AvatarUpload from '@/components/AvatarUpload.vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
+
 
 const route = useRoute()
 const router = useRouter()
@@ -157,9 +161,9 @@ const userInfo = ref<UserInfo>({
   createdAt: ''
 })
 
-// 日记列表
-const diaries = ref<DiaryEntry[]>([])
-const diaryStats = ref<DiaryStats[]>([])
+// 日记列表（直接使用当月日记）
+const diaryStats = ref<DiaryInfo[]>([])
+const currentMonthDiaries = ref<DiaryInfo[]>([])
 
 // 加载状态
 const loading = ref(true)
@@ -188,20 +192,63 @@ const currentDate = ref(new Date())
 const currentYear = computed(() => currentDate.value.getFullYear())
 const currentMonth = computed(() => currentDate.value.getMonth())
 
+// 获取当前月的所有日记记录（循环处理分页）
+const loadCurrentMonthDiaries = async (userId: number, year: number, month: number) => {
+  try {
+    const startDate = `${year}-${String(month + 1).padStart(2, '0')}-01`
+    // 使用本地时间计算月末日期，避免时区问题
+    const endDate = `${year}-${String(month + 1).padStart(2, '0')}-${new Date(year, month + 1, 0).getDate()}`
+    
+    // 初始化日记数组和分页URL
+    let allDiaries: DiaryInfo[] = []
+    let nextUrl: string | null = null
+    
+    // 获取第一页数据
+    const firstResponse = await getDiaries({
+      user_id: userId.toString(),
+      timeRange: `${startDate},${endDate}`,
+      page: 1
+    })
+    
+    const firstData = firstResponse.data
+    allDiaries.push(...firstData.results)
+    nextUrl = firstData.next
+    
+    // 循环获取后续页面的数据
+    while (nextUrl) {
+      try {
+        const response = await http.get(nextUrl)
+        const data: any = response.data
+        allDiaries.push(...data.results)
+        nextUrl = data.next
+      } catch (error) {
+        console.error('获取分页数据失败:', error)
+        break
+      }
+    }
+    
+    currentMonthDiaries.value = allDiaries
+  } catch (error) {
+    console.error('加载当月日记失败:', error)
+    currentMonthDiaries.value = []
+  }
+}
+
 // 加载用户数据
 const loadUserData = async () => {
   try {
     loading.value = true
     if (profileUserId.value) {
-      const [userInfoData, diariesData, diaryStatsData] = await Promise.all([
+      const [userInfoData] = await Promise.all([
         getUserInfo(profileUserId.value),
-        getUserDiaries(profileUserId.value),
-        getUserDiaryStats(profileUserId.value)
       ])
       
       userInfo.value = userInfoData
-      diaries.value = diariesData
-      diaryStats.value = diaryStatsData
+      
+      // 加载当前月的日记记录
+      await loadCurrentMonthDiaries(profileUserId.value, currentYear.value, currentMonth.value)
+      
+
     }
   } catch (error) {
     console.error('加载用户数据失败:', error)
@@ -255,32 +302,32 @@ const cancelEditBio = () => {
 }
 
 // 编辑日记
-const editDiary = (diary: DiaryEntry) => {
+const editDiary = (diary: DiaryInfo) => {
   diaryEditForm.content = diary.content
   diaryEditForm.mood = diary.mood
   editingDiaryId.value = diary.id
 }
 
 const saveDiaryEdit = async () => {
-  if (editingDiaryId.value && isOwnProfile.value) {
-    try {
-      await updateDiary(editingDiaryId.value, diaryEditForm.content, diaryEditForm.mood)
+  // if (editingDiaryId.value && isOwnProfile.value) {
+  //   try {
+  //     await updateDiary(editingDiaryId.value, diaryEditForm.content, diaryEditForm.mood)
       
-      // 更新本地数据
-      const index = diaries.value.findIndex(d => d.id === editingDiaryId.value)
-      if (index !== -1) {
-        diaries.value[index].content = diaryEditForm.content
-        diaries.value[index].mood = diaryEditForm.mood
-      }
+  //     // 更新本地数据
+  //     const index = diaries.value.findIndex(d => d.id === editingDiaryId.value)
+  //     if (index !== -1) {
+  //       diaries.value[index].content = diaryEditForm.content
+  //       diaries.value[index].mood = diaryEditForm.mood
+  //     }
       
-      editingDiaryId.value = null
+  //     editingDiaryId.value = null
       
-      // 重新加载日记统计数据
-      diaryStats.value = await getUserDiaryStats(profileUserId.value!)
-    } catch (error) {
-      console.error('更新日记失败:', error)
-    }
-  }
+  //     // 重新加载日记统计数据
+  //     diaryStats.value = await getUserDiaryStats(profileUserId.value!)
+  //   } catch (error) {
+  //     console.error('更新日记失败:', error)
+  //   }
+  // }
 }
 
 const cancelDiaryEdit = () => {
@@ -294,22 +341,22 @@ const confirmDeleteDiary = (id: number) => {
 }
 
 const deleteDiaryConfirmed = async () => {
-  if (diaryToDelete.value && isOwnProfile.value) {
-    try {
-      await deleteDiary(diaryToDelete.value)
+  // if (diaryToDelete.value && isOwnProfile.value) {
+  //   try {
+  //     await deleteDiary(diaryToDelete.value)
       
-      // 从列表中移除
-      diaries.value = diaries.value.filter(d => d.id !== diaryToDelete.value)
+  //     // 从列表中移除
+  //     diaries.value = diaries.value.filter(d => d.id !== diaryToDelete.value)
       
-      // 重新加载日记统计数据
-      diaryStats.value = await getUserDiaryStats(profileUserId.value!)
+  //     // 重新加载日记统计数据
+  //     diaryStats.value = await getUserDiaryStats(profileUserId.value!)
       
-      showDeleteConfirm.value = false
-      diaryToDelete.value = null
-    } catch (error) {
-      console.error('删除日记失败:', error)
-    }
-  }
+  //     showDeleteConfirm.value = false
+  //     diaryToDelete.value = null
+  //   } catch (error) {
+  //     console.error('删除日记失败:', error)
+  //   }
+  // }
 }
 
 const cancelDeleteDiary = () => {
@@ -318,16 +365,26 @@ const cancelDeleteDiary = () => {
 }
 
 // 日历相关方法
-const prevMonth = () => {
+const prevMonth = async () => {
   const newDate = new Date(currentDate.value)
   newDate.setMonth(newDate.getMonth() - 1)
   currentDate.value = newDate
+  
+  // 重新加载该月的日记记录
+  if (profileUserId.value) {
+    await loadCurrentMonthDiaries(profileUserId.value, currentYear.value, currentMonth.value)
+  }
 }
 
-const nextMonth = () => {
+const nextMonth = async () => {
   const newDate = new Date(currentDate.value)
   newDate.setMonth(newDate.getMonth() + 1)
   currentDate.value = newDate
+  
+  // 重新加载该月的日记记录
+  if (profileUserId.value) {
+    await loadCurrentMonthDiaries(profileUserId.value, currentYear.value, currentMonth.value)
+  }
 }
 
 const calendarDays = computed(() => {
@@ -363,14 +420,32 @@ const calendarDays = computed(() => {
   // 添加当月的天数
   for (let i = 1; i <= daysInMonth; i++) {
     const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`
-    const entry = diaryStats.value.find(stat => stat.date === dateStr)
+    
+    // 检查当天是否有日记
+    const hasEntry = currentMonthDiaries.value.some(diary => {
+      const diaryDate = new Date(diary.created_at)
+      // 使用本地时间，避免时区问题
+      const diaryDateStr = `${diaryDate.getFullYear()}-${String(diaryDate.getMonth() + 1).padStart(2, '0')}-${String(diaryDate.getDate()).padStart(2, '0')}`
+      
+      // 调试信息：打印日期比较
+      if (currentMonthDiaries.value.length > 0) {
+        console.log(`比较日期: 日历日期=${dateStr}, 日记日期=${diaryDateStr}, 原始日记时间=${diary.created_at}`)
+      }
+      
+      return diaryDateStr === dateStr
+    })
     
     days.push({
       date: dateStr,
       dayOfMonth: i,
       isCurrentMonth: true,
-      hasEntry: !!entry,
-      mood: entry?.mood || 'neutral'
+      hasEntry: hasEntry,
+      mood: hasEntry ? currentMonthDiaries.value.find(diary => {
+        const diaryDate = new Date(diary.created_at)
+        // 使用本地时间，避免时区问题
+        const diaryDateStr = `${diaryDate.getFullYear()}-${String(diaryDate.getMonth() + 1).padStart(2, '0')}-${String(diaryDate.getDate()).padStart(2, '0')}`
+        return diaryDateStr === dateStr
+      })?.mood || 'neutral' : 'neutral'
     })
   }
   
@@ -425,10 +500,42 @@ onMounted(() => {
 </script>
 
 <style scoped>
+.profile-page {
+  height: 100vh;
+  overflow-y: auto;
+  background-color: #f5f7fa;
+  position: relative;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* 确保滚动条样式 */
+.profile-page::-webkit-scrollbar {
+  width: 8px;
+}
+
+.profile-page::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+.profile-page::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 4px;
+}
+
+.profile-page::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+
 .profile-container {
   max-width: 900px;
   margin: 80px auto 20px;
   padding: 20px;
+  padding-bottom: 40px;
+  overflow: visible;
+}
+
+.profile-content {
+  overflow: visible;
 }
 
 .loading {
@@ -610,6 +717,8 @@ onMounted(() => {
 
 .has-entry {
   font-weight: bold;
+  background-color: #4CAF50 !important;
+  color: white !important;
 }
 
 .mood-indicator {

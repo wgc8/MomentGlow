@@ -1,4 +1,5 @@
 import request from '@/utils/http'
+import type {UserInfo} from '@/api/user'
 
 export interface DiaryInput {
   id?: number
@@ -17,6 +18,23 @@ export interface DiaryInput {
   // isLiked: boolean
 }
 
+export interface DiaryInfo {
+  id: number
+  title: string
+  content: string
+  mood: string
+  weather: string
+  location: string
+  created_at: string
+  updated_at: string
+  is_public: boolean
+  user: UserInfo
+  tags: any[]
+  comments: any[]
+  user_username: string
+  images: any[]
+}
+
 export interface GetDiariesRequestParams {
   user_id?: string
   page?: number
@@ -27,6 +45,7 @@ export interface GetDiariesRequestParams {
 export interface GetPublicDiariesResponse {
   code: number
   errMsg: string
+  // 这里有问题，实际返回和结构体定义不匹配  publish接口有next的分页，而普通接口没有分页
   data: {
     next: string
     previous: string
@@ -35,7 +54,14 @@ export interface GetPublicDiariesResponse {
   }
 }
 
-// 获取公开日记列表
+export interface GetDiariesResponse {
+  code: number
+  errMsg: string
+  // 这里有问题，实际返回和结构体定义不匹配  publish接口有next的分页，而普通接口没有分页
+  data: DiaryInfo[]
+}
+
+// 获取私人日记列表
 export const getDiaries= (params: GetDiariesRequestParams) => {
   return request.get<GetPublicDiariesResponse>('/api/diaries/', { params })
 }
