@@ -11,9 +11,9 @@
       </div>
       <div class="user-actions">
         <span class="username">{{ username }}</span>
-        <el-dropdown>
+        <el-dropdown class="avatar-dropdown">
           <span class="el-dropdown-link">
-            <el-avatar :size="32" :src="avatar || '/default-avatar.png'"></el-avatar>
+            <el-avatar :size="32" :src="avatarUrl" class="user-avatar"></el-avatar>
           </span>
           <template #dropdown>
             <el-dropdown-menu>
@@ -28,15 +28,26 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '@/store/user'
+import { getUserAvatar } from '@/api/user'
 
 const router = useRouter()
 const userStore = useUserStore()
 
 const username = computed(() => userStore.username)
-const avatar = computed(() => '')  // 如果用户有头像，可以从用户信息中获取
+const avatarUrl = ref('/media/default.jpg')
+
+const loadUserAvatar = async () => {
+  try {
+    const avatarInfo = await getUserAvatar()
+    avatarUrl.value = avatarInfo.avatar_url
+  } catch (error) {
+    console.error('获取用户头像失败:', error)
+    avatarUrl.value = '/media/default.jpg'
+  }
+}
 
 const goToProfile = () => {
   router.push('/profile')
@@ -46,6 +57,12 @@ const logout = () => {
   userStore.logout()
   router.push('/login')
 }
+
+onMounted(() => {
+  if (userStore.isLoggedIn) {
+    loadUserAvatar()
+  }
+})
 </script>
 
 <style lang="scss" scoped>
@@ -116,11 +133,74 @@ const logout = () => {
       color: #333;
     }
     
-    .el-dropdown-link {
-      cursor: pointer;
-      display: flex;
-      align-items: center;
+    .avatar-dropdown {
+      .el-dropdown-link {
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        outline: none;
+        border: none;
+        background: none;
+        
+        &:hover {
+          outline: none;
+          border: none;
+          background: none;
+        }
+        
+        &:focus {
+          outline: none;
+          border: none;
+          background: none;
+        }
+      }
+      
+      .user-avatar {
+        border-radius: 50%;
+        transition: all 0.3s ease;
+        
+        &:hover {
+          transform: scale(1.05);
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+        }
+      }
     }
+  }
+}
+
+// 覆盖Element Plus的默认样式
+:deep(.el-dropdown) {
+  .el-dropdown-link {
+    outline: none !important;
+    border: none !important;
+    background: none !important;
+    
+    &:hover {
+      outline: none !important;
+      border: none !important;
+      background: none !important;
+    }
+    
+    &:focus {
+      outline: none !important;
+      border: none !important;
+      background: none !important;
+    }
+  }
+}
+
+:deep(.el-avatar) {
+  border: none !important;
+  outline: none !important;
+  
+  &:hover {
+    border: none !important;
+    outline: none !important;
+  }
+  
+  &:focus {
+    border: none !important;
+    outline: none !important;
   }
 }
 

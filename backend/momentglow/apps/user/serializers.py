@@ -3,6 +3,7 @@ from .models import CustomUser
 from django.contrib.auth.password_validation import validate_password
 from django.contrib.auth import authenticate
 from rest_framework_simplejwt.tokens import RefreshToken
+from django.conf import settings
 
 class RegisterSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, required=True, validators=[validate_password])
@@ -32,11 +33,32 @@ class RegisterSerializer(serializers.ModelSerializer):
         return user
 
 class UserSerializer(serializers.ModelSerializer):
-    avatar = serializers.ImageField(read_only=True)
+    avatar_url = serializers.SerializerMethodField()
+    
     class Meta:
         model = CustomUser
-        fields = ('id', 'username', 'email', 'avatar')
+        fields = ('id', 'username', 'email', 'avatar', 'avatar_url')
         read_only_fields = ('id',)
+    
+    def get_avatar_url(self, obj):
+        """返回用户头像URL，如果用户没有设置头像则返回默认头像"""
+        request = self.context.get('request')
+        if request is not None:
+            # 获取完整的host信息
+            host = request.build_absolute_uri('/').rstrip('/')
+            
+            if obj.avatar and hasattr(obj.avatar, 'url'):
+                # 返回完整的URL
+                return f"{host}{obj.avatar.url}"
+            else:
+                # 返回默认头像的完整URL
+                return f"{host}/media/default.jpg"
+        else:
+            # 如果没有request上下文，返回相对路径
+            if obj.avatar and hasattr(obj.avatar, 'url'):
+                return obj.avatar.url
+            else:
+                return '/media/default.jpg'
 
 class LoginSerializer(serializers.Serializer):
     username = serializers.CharField(required=True)

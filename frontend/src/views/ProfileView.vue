@@ -10,10 +10,15 @@
       <!-- 用户信息部分 -->
       <div class="profile-header">
         <div class="avatar-container">
-          <img :src="userInfo.avatar || '/default-avatar.png'" alt="用户头像" class="avatar" />
-          <div v-if="isOwnProfile" class="avatar-edit">
-            <button @click="openAvatarEdit" class="edit-btn">更换头像</button>
-          </div>
+          <avatar-upload 
+            v-if="isOwnProfile" 
+            :size="120" 
+          />
+          <el-avatar 
+            v-else 
+            :size="120" 
+            :src="userInfo.avatar_url || '/media/default.jpg'"
+          />
         </div>
         <div class="user-info">
           <div class="username-container">
@@ -128,6 +133,8 @@ import { useUserStore } from '@/store/user'
 import { getUserInfo, getUserDiaries, getUserDiaryStats, updateUserInfo, updateDiary, deleteDiary } from '@/api/user'
 import type { UserInfo, DiaryEntry, DiaryStats } from '@/api/user'
 import NavBar from '@/components/NavBar.vue'
+import AvatarUpload from '@/components/AvatarUpload.vue'
+import { ElMessage, ElMessageBox } from 'element-plus'
 
 const route = useRoute()
 const router = useRouter()
@@ -387,11 +394,6 @@ const getDayClass = (day: any) => {
     'other-month': !day.isCurrentMonth,
     'has-entry': day.hasEntry
   }
-}
-
-// 头像编辑功能（简化版）
-const openAvatarEdit = () => {
-  alert('头像编辑功能尚未实现')
 }
 
 // 工具函数

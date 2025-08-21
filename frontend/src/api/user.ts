@@ -6,6 +6,7 @@ export interface UserInfo {
   username: string
   email: string
   avatar?: string
+  avatar_url?: string
   bio?: string
   createdAt: string
 }
@@ -27,9 +28,15 @@ export interface DiaryStats {
   mood?: string
 }
 
+// 头像信息类型
+export interface AvatarInfo {
+  avatar_url: string
+  has_avatar: boolean
+}
+
 // 获取用户信息
 export const getUserInfo = async (userId: number) => {
-  const response = await http.get(`/api/users/${userId}`)
+  const response = await http.get(`/api/users/profiles/${userId}/`)
   return response.data as UserInfo
 }
 
@@ -42,7 +49,27 @@ export interface UpdateUserData {
 }
 
 export const updateUserInfo = async (userId: number, data: UpdateUserData) => {
-  const response = await http.put(`/api/users/${userId}`, data)
+  const response = await http.put(`/api/users/profiles/${userId}/`, data)
+  return response.data
+}
+
+// 获取用户头像
+export const getUserAvatar = async (userId?: number) => {
+  const url = userId ? `/api/users/avatar/${userId}/` : '/api/users/avatar/'
+  const response = await http.get(url)
+  return response.data as AvatarInfo
+}
+
+// 上传用户头像
+export const uploadUserAvatar = async (file: File) => {
+  const formData = new FormData()
+  formData.append('avatar', file)
+  
+  const response = await http.post('/api/users/avatar/upload/', formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  })
   return response.data
 }
 

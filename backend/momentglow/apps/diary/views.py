@@ -10,7 +10,6 @@ from .serializers import (
     TagSerializer, CommentSerializer
 )
 from django.db import models
-from momentglow.response import CustomResponse
 from momentglow.views_base import CustomAPIView
 from rest_framework.permissions import AllowAny
 
