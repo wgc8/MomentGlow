@@ -34,11 +34,11 @@ class RegisterSerializer(serializers.ModelSerializer):
 
 class UserSerializer(serializers.ModelSerializer):
     avatar_url = serializers.SerializerMethodField()
-    
+
     class Meta:
         model = CustomUser
-        fields = ('id', 'username', 'email', 'avatar', 'avatar_url')
-        read_only_fields = ('id',)
+        fields = ('id', 'username', 'email', 'avatar_url', 'bio', 'date_joined')
+        read_only_fields = ('id', 'date_joined')
     
     def get_avatar_url(self, obj):
         """返回用户头像URL，如果用户没有设置头像则返回默认头像"""

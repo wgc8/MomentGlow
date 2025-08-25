@@ -50,12 +50,18 @@ class LoginView(APIView):
             })
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-class ProfileView(CustomAPIView, generics.RetrieveUpdateAPIView):
-    permission_classes = (IsAuthenticated,)
+
+class ProfileView(CustomAPIView, generics.RetrieveAPIView):
+    """获取指定用户的详细信息"""
+    permission_classes = (AllowAny,)
     serializer_class = UserSerializer
     queryset = CustomUser.objects.all()
-    #用于获取单个数据对象的核心方法，默认通过 URL 中的pk参数从queryset中查询对象
+    
     def get_object(self):
+        """根据URL中的user_id获取用户"""
+        user_id = self.kwargs.get('user_id')
+        if user_id:
+            return CustomUser.objects.get(id=user_id)
         return self.request.user
 
 class AvatarUploadView(CustomAPIView, APIView):

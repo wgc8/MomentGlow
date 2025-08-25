@@ -8,7 +8,7 @@ export interface UserInfo {
   avatar?: string
   avatar_url?: string
   bio?: string
-  createdAt: string
+  date_joined: string
 }
 
 // 日记条目类型

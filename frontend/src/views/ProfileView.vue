@@ -47,7 +47,7 @@
               <i class="fas fa-edit"></i>
             </button>
           </div>
-          <p class="join-date">加入时间：{{ formatDate(userInfo.createdAt) }}</p>
+          <p class="join-date">加入时间：{{ formatDate(userInfo.date_joined) }}</p>
         </div>
       </div>
 
@@ -158,7 +158,8 @@ const userInfo = ref<UserInfo>({
   id: 0,
   username: '',
   email: '',
-  createdAt: ''
+  date_joined: '',
+  bio: '',
 })
 
 // 日记列表（直接使用当月日记）
