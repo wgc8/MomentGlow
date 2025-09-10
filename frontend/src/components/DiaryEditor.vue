@@ -32,13 +32,12 @@
             @change="handleMoodChange"
             class="mood-select"
           >
-            <el-option label="开心" value="happy" />
-            <el-option label="平静" value="calm" />
-            <el-option label="兴奋" value="excited" />
-            <el-option label="难过" value="sad" />
-            <el-option label="生气" value="angry" />
-            <el-option label="焦虑" value="anxious" />
-            <el-option label="疲惫" value="tired" />
+            <el-option
+              v-for="option in moodOptions"
+              :key="option.value"
+              :label="option.label"
+              :value="option.value"
+            />
           </el-select>
           <el-switch
             v-model="isPublic"
@@ -70,11 +69,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onBeforeUnmount, watch } from 'vue'
+import { ref, onMounted, onBeforeUnmount, watch, computed } from 'vue'
 import { ElMessage } from 'element-plus'
 import { Check, Delete, Edit } from '@element-plus/icons-vue'
 import Quill from 'quill'
 import 'quill/dist/quill.snow.css'
+import { MOOD_TEXT_MAP } from '@/types/constants'
 
 const props = defineProps<{
   modelValue: {
@@ -100,6 +100,14 @@ const mood = ref(props.modelValue.mood)
 const isPublic = ref(props.modelValue.isPublic)
 const editorContainer = ref<HTMLElement | null>(null)
 let editor: Quill | null = null
+
+// 计算心情选项
+const moodOptions = computed(() => {
+  return Object.entries(MOOD_TEXT_MAP).map(([value, label]) => ({
+    label,
+    value
+  }))
+})
 
 // 监听属性变化
 watch(() => props.modelValue, (newVal) => {
@@ -367,4 +375,4 @@ onBeforeUnmount(() => {
     }
   }
 }
-</style> 
+</style>

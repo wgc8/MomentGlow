@@ -93,11 +93,9 @@
               <div class="mood-selector">
                 <label>心情：</label>
                 <select v-model="diaryEditForm.mood">
-                  <option value="happy">开心</option>
-                  <option value="sad">难过</option>
-                  <option value="angry">生气</option>
-                  <option value="neutral">平静</option>
-                  <option value="excited">兴奋</option>
+                  <option v-for="option in moodOptions" :key="option.value" :value="option.value">
+                    {{ option.label }}
+                  </option>
                 </select>
               </div>
               <div class="diary-edit-actions">
@@ -129,9 +127,10 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, reactive } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { MOOD_TEXT_MAP } from '@/types/constants'
 import { useUserStore } from '@/store/user'
 import { getUserInfo,  updateUserInfo} from '@/api/user'
-import { getDiaries} from '@/api/diary'
+import { getDiaries, deleteDiary } from '@/api/diary'
 import http from '@/utils/http'
 import type { DiaryInfo } from '@/api/diary'
 import type { UserInfo } from '@/api/user'
@@ -182,6 +181,14 @@ const editingDiaryId = ref<number | null>(null)
 const diaryEditForm = reactive({
   content: '',
   mood: ''
+})
+
+// 从MOOD_TEXT_MAP生成心情选项列表
+const moodOptions = computed(() => {
+  return Object.entries(MOOD_TEXT_MAP).map(([value, label]) => ({
+    value,
+    label
+  }))
 })
 
 // 删除确认
@@ -248,8 +255,6 @@ const loadUserData = async () => {
       
       // 加载当前月的日记记录
       await loadCurrentMonthDiaries(profileUserId.value, currentYear.value, currentMonth.value)
-      
-
     }
   } catch (error) {
     console.error('加载用户数据失败:', error)
@@ -342,22 +347,34 @@ const confirmDeleteDiary = (id: number) => {
 }
 
 const deleteDiaryConfirmed = async () => {
-  // if (diaryToDelete.value && isOwnProfile.value) {
-  //   try {
-  //     await deleteDiary(diaryToDelete.value)
+  if (diaryToDelete.value && isOwnProfile.value) {
+    try {
+      const deletedDiaryId = diaryToDelete.value
       
-  //     // 从列表中移除
-  //     diaries.value = diaries.value.filter(d => d.id !== diaryToDelete.value)
+      // 调用API删除日记
+      await deleteDiary(deletedDiaryId)
       
-  //     // 重新加载日记统计数据
-  //     diaryStats.value = await getUserDiaryStats(profileUserId.value!)
+      // 先关闭删除确认对话框，提高用户体验
+      showDeleteConfirm.value = false
+      diaryToDelete.value = null
       
-  //     showDeleteConfirm.value = false
-  //     diaryToDelete.value = null
-  //   } catch (error) {
-  //     console.error('删除日记失败:', error)
-  //   }
-  // }
+      // 从列表中移除（避免UI闪烁）
+      currentMonthDiaries.value = currentMonthDiaries.value.filter(d => d.id !== deletedDiaryId)
+      
+      // 显示成功提示
+      ElMessage.success('日记删除成功')
+      
+      // 重新加载当前月的日记数据，确保数据准确性
+      if (profileUserId.value) {
+        await loadCurrentMonthDiaries(profileUserId.value, currentYear.value, currentMonth.value)
+      }
+      
+    } catch (error) {
+      // 显示错误提示，提供更好的用户反馈
+      ElMessage.error('删除日记失败，请稍后重试')
+      console.error('删除日记失败:', error)
+    }
+  }
 }
 
 const cancelDeleteDiary = () => {
@@ -450,15 +467,18 @@ const calendarDays = computed(() => {
     })
   }
   
-  // 添加下月开始的几天以填满6行
-  const remainingDays = 42 - days.length
-  for (let i = 1; i <= remainingDays; i++) {
-    days.push({
-      date: `${year}-${month === 11 ? 1 : month + 2}-${i}`,
-      dayOfMonth: i,
-      isCurrentMonth: false,
-      hasEntry: false
-    })
+  // 添加下月开始的几天以填满最后一行到7个单元格
+  const remainingDays = 7 - (days.length % 7)
+  // 如果已经是7的倍数，remainingDays会是7，这时候不需要补充
+  if (remainingDays < 7) {
+    for (let i = 1; i <= remainingDays; i++) {
+      days.push({
+        date: `${year}-${month === 11 ? 1 : month + 2}-${i}`,
+        dayOfMonth: i,
+        isCurrentMonth: false,
+        hasEntry: false
+      })
+    }
   }
   
   return days
@@ -484,14 +504,9 @@ const formatDateTime = (dateString: string) => {
 }
 
 const getMoodText = (mood: string) => {
-  const moodMap: Record<string, string> = {
-    'happy': '开心',
-    'sad': '难过',
-    'angry': '生气',
-    'neutral': '平静',
-    'excited': '兴奋'
-  }
-  return moodMap[mood] || mood
+  // 使用MOOD_TEXT_MAP，如果是'neutral'则映射为'平静'
+  if (mood === 'neutral') return '平静';
+  return MOOD_TEXT_MAP[mood] || mood
 }
 
 // 初始化
@@ -855,4 +870,4 @@ onMounted(() => {
   border-radius: 4px;
   cursor: pointer;
 }
-</style> 
+</style>

@@ -86,6 +86,7 @@
 <script setup lang="ts">
 import { throttle } from '@/utils/throttle';
 import { ref, computed, onMounted, watch, nextTick } from 'vue'
+import { MOOD_TEXT_MAP } from '@/types/constants'
 import { ElMessage } from 'element-plus'
 import { Star, ChatDotRound, Loading } from '@element-plus/icons-vue'
 import NavBar from '@/components/NavBar.vue'
@@ -199,16 +200,7 @@ const formatDateTime = (dateString: string) => {
 }
 
 const getMoodText = (mood: string) => {
-  const moodMap: Record<string, string> = {
-    'happy': '开心',
-    'sad': '难过',
-    'angry': '生气',
-    'calm': '平静',
-    'excited': '兴奋',
-    'anxious': '焦虑',
-    'tired': '疲惫'
-  }
-  return moodMap[mood] || mood
+  return MOOD_TEXT_MAP[mood] || mood
 }
 
 watch([selectedMood, timeRange], () => {
@@ -381,4 +373,4 @@ const handleScroll = throttle(() => {
     }
   }
 }
-</style> 
+</style>
