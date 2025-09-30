@@ -30,9 +30,14 @@
                 <button @click="cancelEditUsername" class="cancel-btn">取消</button>
               </div>
             </div>
-            <button v-if="isOwnProfile && !editingUsername" @click="startEditUsername" class="edit-icon">
-              <i class="fas fa-edit"></i>
-            </button>
+            <!-- 使用Element Plus图标替换Font Awesome图标 -->
+            <el-button v-if="isOwnProfile && !editingUsername" @click="startEditUsername" type="text" size="small" class="edit-icon">
+              <el-icon><Edit /></el-icon>
+            </el-button>
+            <!-- 添加调试信息 -->
+            <!-- <div v-if="true" style="font-size: 12px; color: #999; margin-top: 5px;">
+              调试: isOwnProfile={{ isOwnProfile }}, profileUserId={{ profileUserId }}, userStore.userId={{ userStore.userId }}, editingUsername={{editingUsername}}, isOwnProfile && !editingUsername={{ isOwnProfile && !editingUsername }}
+            </div>  -->
           </div>
           <div class="bio-container">
             <p v-if="!editingBio" class="bio">{{ userInfo.bio || '这个人很懒，什么都没留下...' }}</p>
@@ -43,9 +48,9 @@
                 <button @click="cancelEditBio" class="cancel-btn">取消</button>
               </div>
             </div>
-            <button v-if="isOwnProfile && !editingBio" @click="startEditBio" class="edit-icon">
-              <i class="fas fa-edit"></i>
-            </button>
+            <el-button v-if="isOwnProfile && !editingBio" @click="startEditBio" type="text" size="small" class="edit-icon">
+              <el-icon><Edit /></el-icon>
+            </el-button>
           </div>
           <p class="join-date">加入时间：{{ formatDate(userInfo.date_joined) }}</p>
         </div>
@@ -136,7 +141,8 @@ import type { DiaryInfo } from '@/api/diary'
 import type { UserInfo } from '@/api/user'
 import NavBar from '@/components/NavBar.vue'
 import AvatarUpload from '@/components/AvatarUpload.vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { ElMessage, ElMessageBox, ElButton, ElIcon, ElAvatar } from 'element-plus'
+import { Edit } from '@element-plus/icons-vue'
 
 
 const route = useRoute()
@@ -146,6 +152,7 @@ const userStore = useUserStore()
 // 获取路由中的用户ID，如果没有则使用当前登录用户的ID
 const profileUserId = computed(() => {
   const routeId = Number(route.params.id)
+  console.log('routeId:', routeId, 'userid:' , userStore.userId)
   return isNaN(routeId) ? userStore.userId : routeId
 })
 
@@ -162,7 +169,6 @@ const userInfo = ref<UserInfo>({
 })
 
 // 日记列表（直接使用当月日记）
-const diaryStats = ref<DiaryInfo[]>([])
 const currentMonthDiaries = ref<DiaryInfo[]>([])
 
 // 加载状态
@@ -446,9 +452,9 @@ const calendarDays = computed(() => {
       const diaryDateStr = `${diaryDate.getFullYear()}-${String(diaryDate.getMonth() + 1).padStart(2, '0')}-${String(diaryDate.getDate()).padStart(2, '0')}`
       
       // 调试信息：打印日期比较
-      if (currentMonthDiaries.value.length > 0) {
-        console.log(`比较日期: 日历日期=${dateStr}, 日记日期=${diaryDateStr}, 原始日记时间=${diary.created_at}`)
-      }
+      // if (currentMonthDiaries.value.length > 0) {
+      //   console.log(`比较日期: 日历日期=${dateStr}, 日记日期=${diaryDateStr}, 原始日记时间=${diary.created_at}`)
+      // }
       
       return diaryDateStr === dateStr
     })
@@ -511,6 +517,10 @@ const getMoodText = (mood: string) => {
 
 // 初始化
 onMounted(() => {
+  // 添加日志以调试isOwnProfile问题
+  console.log('onMounted - isOwnProfile:', isOwnProfile.value)
+  console.log('onMounted - userStore.userId:', userStore.userId)
+  console.log('onMounted - profileUserId.value:', profileUserId.value)
   loadUserData()
 })
 </script>
@@ -808,6 +818,20 @@ onMounted(() => {
   color: #f44336;
 }
 
+/* 添加edit-icon类的样式 */
+.edit-icon {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 16px;
+  color: #2196F3;
+  margin-left: 10px;
+  padding: 5px;
+}
+
+.edit-icon:hover {
+  color: #1976D2;
+}
 .diary-content {
   white-space: pre-line;
 }
